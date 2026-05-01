@@ -1,8 +1,9 @@
 "use client";
 
-import { Heart, Star } from "lucide-react";
+import { Star } from "lucide-react";
 import { applyDiscount, cn, formatPrice } from "@/lib/utils";
 import type { Product } from "@/lib/data/types";
+import { useCartStore } from "@/lib/cart/store";
 
 const PALETTE = ["#FFB3CC", "#E5DEFF", "#FFF3B0", "#CFEFE6", "#FFE5F0", "#D7E9FF"];
 
@@ -17,9 +18,23 @@ export function ProductCard({ product }: { product: Product }) {
   const hasDiscount = product.discount_percent > 0;
   const bg = colorFromSlug(product.slug);
   const productImage = product.images?.[0];
+  const { addItem, openCart } = useCartStore();
+
+  function handleAdd(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    addItem({
+      id: product.id,
+      title: product.title,
+      price: finalPrice,
+      image: productImage ?? null,
+    });
+    openCart();
+  }
 
   return (
-    <article
+    <a
+      href={`/p/${product.slug}`}
       className={cn(
         "group relative flex flex-col gap-3 rounded-[24px] bg-white/70 p-3",
         "transition-all duration-300 hover:-translate-y-1 hover:rotate-[-0.5deg]",
@@ -57,14 +72,6 @@ export function ProductCard({ product }: { product: Product }) {
             </span>
           )}
         </div>
-
-        <button
-          type="button"
-          aria-label="Agregar a favoritos"
-          className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full bg-cream/90 text-plum backdrop-blur transition hover:bg-pink hover:text-cream"
-        >
-          <Heart className="h-4 w-4" />
-        </button>
       </div>
 
       <div className="px-1 flex flex-col gap-1">
@@ -88,10 +95,11 @@ export function ProductCard({ product }: { product: Product }) {
 
       <button
         type="button"
+        onClick={handleAdd}
         className="mt-1 rounded-full bg-plum px-4 py-2.5 text-sm font-semibold text-cream transition hover:bg-pink hover:shadow-[0_0_24px_rgba(255,77,139,0.4)]"
       >
         Agregar
       </button>
-    </article>
+    </a>
   );
 }

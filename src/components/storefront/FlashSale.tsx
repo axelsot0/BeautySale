@@ -15,19 +15,23 @@ function pad(n: number) {
 }
 
 export function FlashSale() {
-  const [endsAt] = useState(() => nextEnd());
-  const [now, setNow] = useState(() => Date.now());
+  // null = not yet hydrated; avoids SSR/client mismatch
+  const [endsAt, setEndsAt] = useState<number | null>(null);
+  const [now, setNow] = useState<number | null>(null);
 
   useEffect(() => {
+    const end = nextEnd();
+    setEndsAt(end);
+    setNow(Date.now());
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
 
-  const remaining = Math.max(0, endsAt - now);
-  const days = Math.floor(remaining / 86_400_000);
-  const hours = Math.floor((remaining % 86_400_000) / 3_600_000);
-  const minutes = Math.floor((remaining % 3_600_000) / 60_000);
-  const seconds = Math.floor((remaining % 60_000) / 1000);
+  const remaining = endsAt !== null && now !== null ? Math.max(0, endsAt - now) : null;
+  const days    = remaining !== null ? Math.floor(remaining / 86_400_000) : 0;
+  const hours   = remaining !== null ? Math.floor((remaining % 86_400_000) / 3_600_000) : 0;
+  const minutes = remaining !== null ? Math.floor((remaining % 3_600_000) / 60_000) : 0;
+  const seconds = remaining !== null ? Math.floor((remaining % 60_000) / 1000) : 0;
 
   const blocks = [
     { label: "días", value: pad(days), bg: "bg-cream" },

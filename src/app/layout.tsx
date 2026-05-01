@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, DM_Sans } from "next/font/google";
 import "./globals.css";
+import { CartDrawer } from "@/components/storefront/CartDrawer";
 
 const bricolage = Bricolage_Grotesque({
   variable: "--font-bricolage",
@@ -31,7 +32,10 @@ export default function RootLayout({
       lang="es"
       className={`${bricolage.variable} ${dmSans.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-cream text-plum">{children}</body>
+      <body className="min-h-full flex flex-col bg-cream text-plum">
+        {children}
+        <CartDrawer />
+      </body>
     </html>
   );
 }

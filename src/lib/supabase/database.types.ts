@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      admins: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          email: string
+          full_name: string | null
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          email: string
+          full_name?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          email?: string
+          full_name?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       banners: {
         Row: {
           active: boolean
@@ -56,6 +83,7 @@ export type Database = {
           created_at: string
           icon: string | null
           id: string
+          image_url: string | null
           name: string
           position: number
           slug: string
@@ -65,6 +93,7 @@ export type Database = {
           created_at?: string
           icon?: string | null
           id?: string
+          image_url?: string | null
           name: string
           position?: number
           slug: string
@@ -74,6 +103,7 @@ export type Database = {
           created_at?: string
           icon?: string | null
           id?: string
+          image_url?: string | null
           name?: string
           position?: number
           slug?: string

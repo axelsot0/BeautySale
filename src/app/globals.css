@@ -89,3 +89,39 @@ body {
 /* Hide scrollbar but keep scroll */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { scrollbar-width: none; }
+
+/* Admin form field utilities */
+.field-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-plum-soft);
+  margin-bottom: 0.375rem;
+}
+
+.field-input {
+  width: 100%;
+  border-radius: 1rem;
+  border: 1px solid rgba(45, 27, 78, 0.1);
+  background: rgba(255, 248, 240, 0.4);
+  padding: 0.75rem 1rem;
+  outline: none;
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  color: var(--color-plum);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.field-input:focus {
+  border-color: var(--color-pink);
+  background: white;
+}
+
+.field-error {
+  font-size: 0.75rem;
+  color: var(--color-pink);
+  font-weight: 500;
+  margin-top: 0.25rem;
+}

@@ -3,18 +3,23 @@
 import { useEffect, useState } from "react";
 import { Heart, Menu, Search, ShoppingBag, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useCartStore } from "@/lib/cart/store";
 
 const NAV = [
+  { label: "Todos",            href: "/productos" },
   { label: "Cuidado personal", href: "/c/cuidado-personal" },
   { label: "Ojos",             href: "/c/ojos" },
   { label: "Labios",           href: "/c/labios" },
   { label: "Rostro",           href: "/c/rostro" },
-  { label: "Cabello",          href: "/c/cabello" },
 ];
 
 export function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { openCart, totalItems } = useCartStore();
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => { setHydrated(true); }, []);
+  const count = hydrated ? totalItems() : 0;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -71,11 +76,17 @@ export function Header() {
           <button aria-label="Favoritos" className="hidden sm:grid h-10 w-10 place-items-center rounded-full hover:bg-plum/5">
             <Heart className="h-5 w-5" />
           </button>
-          <button aria-label="Carrito" className="relative grid h-10 w-10 place-items-center rounded-full hover:bg-plum/5">
+          <button
+            aria-label="Carrito"
+            onClick={openCart}
+            className="relative grid h-10 w-10 place-items-center rounded-full hover:bg-plum/5"
+          >
             <ShoppingBag className="h-5 w-5" />
-            <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-pink px-1 text-[10px] font-bold text-cream">
-              0
-            </span>
+            {count > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-pink px-1 text-[10px] font-bold text-cream">
+                {count > 99 ? "99+" : count}
+              </span>
+            )}
           </button>
         </div>
       </div>

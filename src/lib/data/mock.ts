@@ -3,12 +3,12 @@ import type { Category, Product, Banner, News } from "./types";
 const now = new Date().toISOString();
 
 export const mockCategories: Category[] = [
-  { id: "c1", name: "Cuidado personal", slug: "cuidado-personal", color: "#7DD3C0", icon: "💆‍♀️", position: 0, created_at: now },
-  { id: "c2", name: "Ojos",             slug: "ojos",             color: "#B5A3E8", icon: "👁️",   position: 1, created_at: now },
-  { id: "c3", name: "Labios",           slug: "labios",           color: "#FF4D8B", icon: "💋",   position: 2, created_at: now },
-  { id: "c4", name: "Rostro",           slug: "rostro",           color: "#FFE066", icon: "✨",   position: 3, created_at: now },
-  { id: "c5", name: "Cabello",          slug: "cabello",          color: "#E5DEFF", icon: "💁‍♀️", position: 4, created_at: now },
-  { id: "c6", name: "Accesorios",       slug: "accesorios",       color: "#CFEFE6", icon: "💖",   position: 5, created_at: now },
+  { id: "c1", name: "Cuidado personal", slug: "cuidado-personal", color: "#7DD3C0", icon: "💆‍♀️", image_url: null, position: 0, created_at: now },
+  { id: "c2", name: "Ojos",             slug: "ojos",             color: "#B5A3E8", icon: "👁️",   image_url: null, position: 1, created_at: now },
+  { id: "c3", name: "Labios",           slug: "labios",           color: "#FF4D8B", icon: "💋",   image_url: null, position: 2, created_at: now },
+  { id: "c4", name: "Rostro",           slug: "rostro",           color: "#FFE066", icon: "✨",   image_url: null, position: 3, created_at: now },
+  { id: "c5", name: "Cabello",          slug: "cabello",          color: "#E5DEFF", icon: "💁‍♀️", image_url: null, position: 4, created_at: now },
+  { id: "c6", name: "Accesorios",       slug: "accesorios",       color: "#CFEFE6", icon: "💖",   image_url: null, position: 5, created_at: now },
 ];
 
 const product = (
