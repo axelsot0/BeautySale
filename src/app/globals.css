@@ -1,26 +1,91 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@theme {
+  /* Bold & Colorful palette */
+  --color-pink: #FF4D8B;
+  --color-pink-soft: #FFB3CC;
+  --color-lavender: #B5A3E8;
+  --color-lavender-soft: #E5DEFF;
+  --color-butter: #FFE066;
+  --color-butter-soft: #FFF3B0;
+  --color-mint: #7DD3C0;
+  --color-mint-soft: #CFEFE6;
+  --color-cream: #FFF8F0;
+  --color-plum: #2D1B4E;
+  --color-plum-soft: #5C4A82;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  /* Semantic */
+  --color-background: var(--color-cream);
+  --color-foreground: var(--color-plum);
+  --color-primary: var(--color-pink);
+  --color-accent: var(--color-butter);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Fonts */
+  --font-display: var(--font-bricolage), system-ui, sans-serif;
+  --font-sans: var(--font-dm-sans), system-ui, sans-serif;
+
+  /* Shadows (color-tinted, not gray) */
+  --shadow-soft: 0 8px 24px rgba(255, 77, 139, 0.15);
+  --shadow-glow-pink: 0 0 32px rgba(255, 77, 139, 0.4);
+  --shadow-lift: 0 16px 40px rgba(45, 27, 78, 0.12);
+
+  /* Radii */
+  --radius-card: 24px;
+  --radius-pill: 9999px;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-cream);
+  color: var(--color-plum);
+  font-family: var(--font-sans);
 }
+
+/* Display utility */
+.font-display {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Marquee animation for news bar + brand strip */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}
+
+.animate-marquee-fast {
+  animation: marquee 18s linear infinite;
+}
+
+.animate-marquee:hover,
+.animate-marquee-fast:hover {
+  animation-play-state: paused;
+}
+
+/* Subtle floating blobs (hero / sale banner decoration) */
+@keyframes float-slow {
+  0%, 100% { transform: translate(0, 0); }
+  50%      { transform: translate(20px, -20px); }
+}
+
+.animate-float {
+  animation: float-slow 8s ease-in-out infinite;
+}
+
+/* Scroll-snap helper for category & product carousels */
+.snap-x-soft {
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.snap-x-soft > * {
+  scroll-snap-align: start;
+}
+
+/* Hide scrollbar but keep scroll */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
