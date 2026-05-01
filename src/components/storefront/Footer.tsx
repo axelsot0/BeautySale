@@ -1,3 +1,5 @@
+"use client";
+
 import { Mail } from "lucide-react";
 
 // Brand icons (lucide-react v1 removed brand icons for legal reasons; using inline SVGs).
