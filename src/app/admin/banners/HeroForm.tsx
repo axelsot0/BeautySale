@@ -11,12 +11,14 @@ export function HeroForm({ hero }: { hero?: Banner }) {
   const [state, action, pending] = useActionState(saveHero, INITIAL);
 
   const [preview, setPreview] = useState<string | null>(null);
+  const [removeExisting, setRemoveExisting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setPreview(URL.createObjectURL(file));
+    setRemoveExisting(false);
   }
 
   function clearNewImage() {
@@ -25,14 +27,21 @@ export function HeroForm({ hero }: { hero?: Banner }) {
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
-  const currentImage = preview ?? hero?.image_url ?? null;
+  function removeImage() {
+    clearNewImage();
+    setRemoveExisting(true);
+  }
+
+  const savedImage = hero?.image_url || null;
+  const currentImage = preview ?? (removeExisting ? null : savedImage);
 
   return (
     <form action={action} className="rounded-[24px] bg-white p-6 md:p-8 border border-plum/5 space-y-6 max-w-2xl">
       {hero && <input type="hidden" name="id" value={hero.id} />}
-      {hero && !preview && (
+      {hero && !preview && !removeExisting && (
         <input type="hidden" name="existing_image_url" value={hero.image_url} />
       )}
+      {removeExisting && <input type="hidden" name="remove_image" value="true" />}
 
       {/* ── Image ── */}
       <div>
@@ -43,7 +52,7 @@ export function HeroForm({ hero }: { hero?: Banner }) {
             <img src={currentImage} alt="" className="h-full w-full object-cover" />
             <button
               type="button"
-              onClick={clearNewImage}
+              onClick={preview ? clearNewImage : removeImage}
               className="absolute top-2 right-2 h-8 w-8 rounded-full bg-white/90 grid place-items-center hover:bg-white shadow"
             >
               <X className="h-4 w-4 text-plum" />

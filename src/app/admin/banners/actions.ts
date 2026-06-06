@@ -175,8 +175,18 @@ export async function saveHero(
   }
 
   const existingUrl = String(formData.get("existing_image_url") ?? "");
-  const finalImageUrl = image_url ?? existingUrl;
-  if (!finalImageUrl) return { error: "La imagen es obligatoria" };
+  const removeImage = formData.get("remove_image") === "true";
+
+  let finalImageUrl: string;
+  if (image_url) {
+    finalImageUrl = image_url;
+  } else if (removeImage) {
+    finalImageUrl = "";
+  } else if (existingUrl) {
+    finalImageUrl = existingUrl;
+  } else {
+    return { error: "La imagen es obligatoria" };
+  }
 
   const payload = {
     ...fields,
@@ -186,7 +196,8 @@ export async function saveHero(
   };
 
   if (id) {
-    if (image_url && existingUrl && existingUrl !== image_url) {
+    // Delete old image from storage if replaced or explicitly removed
+    if (existingUrl && (image_url || removeImage) && existingUrl !== image_url) {
       await deleteImageByUrl(existingUrl, "banner-images");
     }
     const { error } = await supabase.from("banners").update(payload).eq("id", id);
