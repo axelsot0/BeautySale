@@ -73,9 +73,14 @@ export function Hero({ banner }: { banner: Banner }) {
             />
 
             <div className="absolute bottom-0 left-0 right-0 overflow-hidden bg-cream py-2">
-              <div className="flex gap-6 animate-marquee-fast whitespace-nowrap font-display font-bold text-plum">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <span key={i}>{marquee}&nbsp;&nbsp;</span>
+              <div className="flex animate-marquee-hero font-display font-bold text-plum whitespace-nowrap">
+                {/* Two identical groups — at -50% group 1 exits, group 2 is already there */}
+                {[0, 1].map((g) => (
+                  <div key={g} className="flex shrink-0 gap-8 pr-8" aria-hidden={g === 1}>
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <span key={i}>{marquee}</span>
+                    ))}
+                  </div>
                 ))}
               </div>
             </div>

@@ -66,6 +66,17 @@ body {
   animation-play-state: paused;
 }
 
+/* Hero image marquee — two identical groups, loop on -50% */
+@keyframes marquee-hero {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.animate-marquee-hero {
+  animation: marquee-hero 12s linear infinite;
+  will-change: transform;
+}
+
 /* Subtle floating blobs (hero / sale banner decoration) */
 @keyframes float-slow {
   0%, 100% { transform: translate(0, 0); }
