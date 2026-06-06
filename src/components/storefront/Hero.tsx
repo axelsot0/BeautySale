@@ -51,39 +51,35 @@ export function Hero({ banner }: { banner: Banner }) {
         </div>
 
         <div className="relative">
-          <div className="relative aspect-square rounded-[40px] bg-pink overflow-hidden shadow-[0_24px_60px_rgba(255,77,139,0.3)]">
-            {banner.image_url ? (
+          <div className={`relative aspect-square rounded-[40px] overflow-hidden ${banner.image_url ? "bg-pink shadow-[0_24px_60px_rgba(255,77,139,0.3)]" : "bg-plum/5"}`}>
+            {banner.image_url && (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={banner.image_url} alt={banner.title} className="absolute inset-0 h-full w-full object-cover" />
-            ) : (
-              <div className="absolute inset-0 grid place-items-center">
-                <div className="font-display text-cream text-[200px] leading-none opacity-30 select-none">
-                  💄
-                </div>
-              </div>
             )}
-            <div className="absolute -top-8 -left-8 h-32 w-32 rounded-full bg-butter animate-float" />
-            <div
-              className="absolute -bottom-10 -right-10 h-40 w-40 rounded-full bg-mint animate-float"
-              style={{ animationDelay: "1.5s" }}
-            />
-            <div
-              className="absolute top-1/2 right-8 h-16 w-16 rounded-full bg-lavender animate-float"
-              style={{ animationDelay: "0.8s" }}
-            />
-
-            <div className="absolute bottom-0 left-0 right-0 overflow-hidden bg-cream py-2">
-              <div className="flex animate-marquee-hero font-display font-bold text-plum whitespace-nowrap">
-                {/* Two identical groups — at -50% group 1 exits, group 2 is already there */}
-                {[0, 1].map((g) => (
-                  <div key={g} className="flex shrink-0 gap-8 pr-8" aria-hidden={g === 1}>
-                    {Array.from({ length: 6 }).map((_, i) => (
-                      <span key={i}>{marquee}</span>
+            {banner.image_url && (
+              <>
+                <div className="absolute -top-8 -left-8 h-32 w-32 rounded-full bg-butter animate-float" />
+                <div
+                  className="absolute -bottom-10 -right-10 h-40 w-40 rounded-full bg-mint animate-float"
+                  style={{ animationDelay: "1.5s" }}
+                />
+                <div
+                  className="absolute top-1/2 right-8 h-16 w-16 rounded-full bg-lavender animate-float"
+                  style={{ animationDelay: "0.8s" }}
+                />
+                <div className="absolute bottom-0 left-0 right-0 overflow-hidden bg-cream py-2">
+                  <div className="flex animate-marquee-hero font-display font-bold text-plum whitespace-nowrap">
+                    {[0, 1].map((g) => (
+                      <div key={g} className="flex shrink-0 gap-8 pr-8" aria-hidden={g === 1}>
+                        {Array.from({ length: 6 }).map((_, i) => (
+                          <span key={i}>{marquee}</span>
+                        ))}
+                      </div>
                     ))}
                   </div>
-                ))}
-              </div>
-            </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
