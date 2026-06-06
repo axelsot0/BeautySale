@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { Zap } from "lucide-react";
+import type { FlashSale as FlashSaleData } from "@/lib/data/types";
 
-function nextEnd() {
-  // 24-hour rolling deadline.
+function rollingEnd() {
+  // 24-hour rolling deadline (used when no explicit ends_at is set).
   const t = new Date();
   t.setHours(t.getHours() + 24, 0, 0, 0);
   return t.getTime();
@@ -14,18 +15,18 @@ function pad(n: number) {
   return n.toString().padStart(2, "0");
 }
 
-export function FlashSale() {
+export function FlashSale({ data }: { data: FlashSaleData }) {
   // null = not yet hydrated; avoids SSR/client mismatch
   const [endsAt, setEndsAt] = useState<number | null>(null);
   const [now, setNow] = useState<number | null>(null);
 
   useEffect(() => {
-    const end = nextEnd();
-    setEndsAt(end);
+    const explicit = data.ends_at ? new Date(data.ends_at).getTime() : null;
+    setEndsAt(explicit && !Number.isNaN(explicit) ? explicit : rollingEnd());
     setNow(Date.now());
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [data.ends_at]);
 
   const remaining = endsAt !== null && now !== null ? Math.max(0, endsAt - now) : null;
   const days    = remaining !== null ? Math.floor(remaining / 86_400_000) : 0;
@@ -51,16 +52,14 @@ export function FlashSale() {
             <div className="space-y-4 text-cream">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-plum/20 backdrop-blur px-4 py-1.5 text-xs font-bold uppercase tracking-wider">
                 <Zap className="h-3.5 w-3.5 fill-butter text-butter" />
-                Flash sale 24hs
+                {data.title}
               </span>
               <h2 className="font-display text-5xl md:text-7xl leading-none drop-shadow-[0_2px_8px_rgba(45,27,78,0.2)]">
-                -40% OFF
+                {data.discount_label}
               </h2>
-              <p className="text-cream/90 text-lg max-w-md">
-                En selección de cuidado facial y labiales. Sin código, descuento aplicado al carrito.
-              </p>
+              <p className="text-cream/90 text-lg max-w-md">{data.description}</p>
               <a
-                href="/ofertas"
+                href={data.cta_link || "/ofertas"}
                 className="inline-block rounded-full bg-cream px-6 py-3 font-bold text-plum hover:bg-butter transition"
               >
                 Comprar ofertas

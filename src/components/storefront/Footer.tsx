@@ -1,6 +1,7 @@
-"use client";
-
 import { Mail } from "lucide-react";
+import { getSocialLinks } from "@/lib/data/queries";
+import { SOCIAL_NETWORKS, socialHref, type SocialKey } from "@/lib/social";
+import { NewsletterForm } from "./NewsletterForm";
 
 // Brand icons (lucide-react v1 removed brand icons for legal reasons; using inline SVGs).
 function InstagramIcon(props: React.SVGProps<SVGSVGElement>) {
@@ -37,6 +38,14 @@ function WhatsAppIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
+const SOCIAL_ICONS: Record<SocialKey, { icon: React.FC<React.SVGProps<SVGSVGElement>>; hover: string }> = {
+  instagram: { icon: InstagramIcon, hover: "hover:bg-pink" },
+  tiktok: { icon: TikTokIcon, hover: "hover:bg-mint hover:text-plum" },
+  whatsapp: { icon: WhatsAppIcon, hover: "hover:bg-mint hover:text-plum" },
+  facebook: { icon: FacebookIcon, hover: "hover:bg-lavender hover:text-plum" },
+  email: { icon: Mail, hover: "hover:bg-butter hover:text-plum" },
+};
+
 const FOOTER_NAV = {
   categorias: [
     { label: "Cuidado personal", href: "/c/cuidado-personal" },
@@ -63,7 +72,10 @@ const FOOTER_NAV = {
   ],
 };
 
-export function Footer() {
+export async function Footer() {
+  const social = await getSocialLinks();
+  const activeSocials = SOCIAL_NETWORKS.filter((n) => social[n.key].active && social[n.key].url.trim());
+
   return (
     <footer className="relative overflow-hidden bg-plum text-cream mt-12">
       <div className="absolute -top-32 -right-20 h-96 w-96 rounded-full bg-pink/30 blur-3xl" />
@@ -80,20 +92,7 @@ export function Footer() {
                 10% off en tu primera compra + tips de belleza, lanzamientos y mimos.
               </p>
             </div>
-            <form className="flex flex-col sm:flex-row gap-2" onSubmit={(e) => e.preventDefault()}>
-              <input
-                type="email"
-                required
-                placeholder="tu@email.com"
-                className="flex-1 rounded-full bg-cream/10 backdrop-blur border border-cream/20 px-5 py-3 text-cream placeholder:text-cream/50 outline-none focus:border-pink"
-              />
-              <button
-                type="submit"
-                className="rounded-full bg-pink px-6 py-3 font-bold text-cream hover:shadow-[0_0_24px_rgba(255,77,139,0.5)] transition"
-              >
-                Quiero el 10%
-              </button>
-            </form>
+            <NewsletterForm />
           </div>
         </div>
 
@@ -105,24 +104,25 @@ export function Footer() {
             <p className="text-sm text-cream/70 max-w-xs">
               Productos de belleza, cuidado personal y accesorios. Hechos con cariño.
             </p>
-            <div className="flex items-center gap-2">
-              {[
-                { icon: InstagramIcon, hover: "hover:bg-pink", label: "Instagram" },
-                { icon: TikTokIcon, hover: "hover:bg-mint hover:text-plum", label: "TikTok" },
-                { icon: WhatsAppIcon, hover: "hover:bg-mint hover:text-plum", label: "WhatsApp" },
-                { icon: FacebookIcon, hover: "hover:bg-lavender hover:text-plum", label: "Facebook" },
-                { icon: Mail, hover: "hover:bg-butter hover:text-plum", label: "Email" },
-              ].map(({ icon: Icon, hover, label }) => (
-                <a
-                  key={label}
-                  href="#"
-                  aria-label={label}
-                  className={`grid h-10 w-10 place-items-center rounded-full bg-cream/10 ${hover} transition`}
-                >
-                  <Icon className="h-4 w-4" />
-                </a>
-              ))}
-            </div>
+            {activeSocials.length > 0 && (
+              <div className="flex items-center gap-2">
+                {activeSocials.map((n) => {
+                  const { icon: Icon, hover } = SOCIAL_ICONS[n.key];
+                  return (
+                    <a
+                      key={n.key}
+                      href={socialHref(n.key, social[n.key].url)}
+                      target={n.key === "email" ? undefined : "_blank"}
+                      rel={n.key === "email" ? undefined : "noopener noreferrer"}
+                      aria-label={n.label}
+                      className={`grid h-10 w-10 place-items-center rounded-full bg-cream/10 ${hover} transition`}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </a>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {(

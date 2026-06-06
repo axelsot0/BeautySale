@@ -8,9 +8,8 @@ import { ImagePlus, X } from "lucide-react";
 const INITIAL: BannerFormState = {};
 
 const SLOT_OPTIONS = [
-  { value: "hero", label: "Hero (banner principal)" },
-  { value: "mid", label: "Mid (banner del medio)" },
-  { value: "sidebar", label: "Sidebar / secundario" },
+  { value: "mosaic", label: "Mosaic (editoriales)" },
+  { value: "sale", label: "Sale (promos)" },
 ];
 
 export function BannerForm({ banner }: { banner?: Banner }) {
@@ -67,7 +66,6 @@ export function BannerForm({ banner }: { banner?: Banner }) {
             <span className="text-xs">JPG / PNG / WEBP · máx 5MB · recomendado 1440×480px</span>
           </button>
         )}
-
         <input
           ref={fileInputRef}
           type="file"
@@ -87,7 +85,7 @@ export function BannerForm({ banner }: { banner?: Banner }) {
           defaultValue={banner?.title}
           required
           maxLength={120}
-          placeholder="Hasta 50% OFF en skincare"
+          placeholder="Editorial: rituales de noche"
           className="field-input"
         />
         {state.fieldErrors?.title && <p className="field-error">{state.fieldErrors.title}</p>}
@@ -110,10 +108,10 @@ export function BannerForm({ banner }: { banner?: Banner }) {
       <label className="block">
         <span className="field-label">Link (opcional)</span>
         <input
-          type="url"
+          type="text"
           name="link"
           defaultValue={banner?.link ?? ""}
-          placeholder="https://..."
+          placeholder="/blog/rituales"
           className="field-input"
         />
         {state.fieldErrors?.link && <p className="field-error">{state.fieldErrors.link}</p>}
@@ -123,7 +121,7 @@ export function BannerForm({ banner }: { banner?: Banner }) {
       <div className="grid grid-cols-2 gap-4">
         <label className="block">
           <span className="field-label">Slot</span>
-          <select name="slot" defaultValue={banner?.slot ?? "hero"} className="field-input">
+          <select name="slot" defaultValue={banner?.slot ?? "mosaic"} className="field-input">
             {SLOT_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}

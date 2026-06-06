@@ -74,7 +74,6 @@ export default function CheckoutPage() {
 
       // Redirect to PayPal approval
       if (data.approvalUrl) {
-        clear(); // optimistically clear cart before PayPal redirect
         window.location.href = data.approvalUrl;
       } else {
         setError("No se recibió URL de pago");

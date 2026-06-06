@@ -57,7 +57,7 @@ export default async function AdminCategoriesPage() {
                   <td className="px-5 py-3">
                     <div className="flex items-center justify-end gap-2">
                       <a
-                        href={`/admin/categories/${c.id}`}
+                        href={`/admin/categories/${c.slug}`}
                         aria-label="Editar"
                         className="grid h-9 w-9 place-items-center rounded-full hover:bg-plum/5"
                       >

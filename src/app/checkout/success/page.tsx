@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle, Loader2 } from "lucide-react";
+import { useCartStore } from "@/lib/cart/store";
 
 type Status = "loading" | "success" | "error";
 
@@ -22,6 +23,7 @@ function SuccessContent() {
   const params = useSearchParams();
   const orderId = params.get("orderId");
   const paypalOrderId = params.get("token");
+  const { clear } = useCartStore();
 
   const [status, setStatus] = useState<Status>("loading");
   const [error, setError] = useState<string | null>(null);
@@ -42,6 +44,7 @@ function SuccessContent() {
       .then((r) => r.json())
       .then((data) => {
         if (data.success) {
+          clear(); // clear cart only after confirmed payment
           setStatus("success");
         } else {
           setStatus("error");

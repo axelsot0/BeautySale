@@ -14,6 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      brands: {
+        Row: {
+          active: boolean
+          created_at: string
+          font_style: string
+          id: string
+          logo_url: string | null
+          name: string
+          position: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          font_style?: string
+          id?: string
+          logo_url?: string | null
+          name: string
+          position?: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          font_style?: string
+          id?: string
+          logo_url?: string | null
+          name?: string
+          position?: number
+        }
+        Relationships: []
+      }
+      flash_sale: {
+        Row: {
+          active: boolean
+          cta_link: string
+          description: string
+          discount_label: string
+          ends_at: string | null
+          id: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          cta_link?: string
+          description?: string
+          discount_label?: string
+          ends_at?: string | null
+          id?: number
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          cta_link?: string
+          description?: string
+          discount_label?: string
+          ends_at?: string | null
+          id?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       admins: {
         Row: {
           created_at: string
@@ -45,9 +108,15 @@ export type Database = {
         Row: {
           active: boolean
           created_at: string
+          cta2_label: string | null
+          cta2_link: string | null
+          cta_label: string | null
+          eyebrow_color: string | null
+          eyebrow_text: string | null
           id: string
           image_url: string
           link: string | null
+          marquee_text: string | null
           position: number
           slot: string
           subtitle: string | null
@@ -56,9 +125,15 @@ export type Database = {
         Insert: {
           active?: boolean
           created_at?: string
+          cta2_label?: string | null
+          cta2_link?: string | null
+          cta_label?: string | null
+          eyebrow_color?: string | null
+          eyebrow_text?: string | null
           id?: string
           image_url: string
           link?: string | null
+          marquee_text?: string | null
           position?: number
           slot?: string
           subtitle?: string | null
@@ -67,9 +142,15 @@ export type Database = {
         Update: {
           active?: boolean
           created_at?: string
+          cta2_label?: string | null
+          cta2_link?: string | null
+          cta_label?: string | null
+          eyebrow_color?: string | null
+          eyebrow_text?: string | null
           id?: string
           image_url?: string
           link?: string | null
+          marquee_text?: string | null
           position?: number
           slot?: string
           subtitle?: string | null
@@ -107,6 +188,36 @@ export type Database = {
           name?: string
           position?: number
           slug?: string
+        }
+        Relationships: []
+      }
+      newsletter_subscribers: {
+        Row: {
+          id: string
+          email: string
+          code: string
+          used: boolean
+          fingerprint: string | null
+          ip: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          email: string
+          code: string
+          used?: boolean
+          fingerprint?: string | null
+          ip?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          email?: string
+          code?: string
+          used?: boolean
+          fingerprint?: string | null
+          ip?: string | null
+          created_at?: string
         }
         Relationships: []
       }
@@ -179,20 +290,41 @@ export type Database = {
       platform_settings: {
         Row: {
           active: boolean
+          demo_mode: boolean
+          editorial_eyebrow: string | null
+          editorial_title: string | null
           id: number
+          logo_url: string | null
           message_when_off: string
+          site_name: string | null
+          social_links: Json | null
+          theme: Json | null
           updated_at: string
         }
         Insert: {
           active?: boolean
+          demo_mode?: boolean
+          editorial_eyebrow?: string | null
+          editorial_title?: string | null
           id?: number
+          logo_url?: string | null
           message_when_off?: string
+          site_name?: string | null
+          social_links?: Json | null
+          theme?: Json | null
           updated_at?: string
         }
         Update: {
           active?: boolean
+          demo_mode?: boolean
+          editorial_eyebrow?: string | null
+          editorial_title?: string | null
           id?: number
+          logo_url?: string | null
           message_when_off?: string
+          site_name?: string | null
+          social_links?: Json | null
+          theme?: Json | null
           updated_at?: string
         }
         Relationships: []

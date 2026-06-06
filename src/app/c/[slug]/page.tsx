@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { ChevronRight, PackageOpen } from "lucide-react";
 import { getCategoryBySlug, getProductsByCategory, getCategories } from "@/lib/data/queries";
-import { Header } from "@/components/storefront/Header";
+import { SiteHeader } from "@/components/storefront/SiteHeader";
 import { Footer } from "@/components/storefront/Footer";
 import { ProductCard } from "@/components/storefront/ProductCard";
 
@@ -26,7 +26,7 @@ export default async function CategoryPage({
 
   return (
     <>
-      <Header />
+      <SiteHeader />
 
       <main className="flex-1 w-full">
 

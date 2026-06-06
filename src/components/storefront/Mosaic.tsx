@@ -1,7 +1,15 @@
 import { ArrowRight } from "lucide-react";
 import type { Banner } from "@/lib/data/types";
 
-export function Mosaic({ banners }: { banners: Banner[] }) {
+export function Mosaic({
+  banners,
+  eyebrow,
+  title,
+}: {
+  banners: Banner[];
+  eyebrow: string;
+  title: string;
+}) {
   if (banners.length === 0) return null;
 
   const main = banners[0];
@@ -11,12 +19,8 @@ export function Mosaic({ banners }: { banners: Banner[] }) {
     <section className="py-10 md:py-16">
       <div className="max-w-7xl mx-auto px-4 md:px-8">
         <div className="mb-6 md:mb-8">
-          <p className="text-sm font-bold uppercase tracking-widest text-pink">
-            🌸 editoriales
-          </p>
-          <h2 className="font-display text-3xl md:text-5xl mt-1">
-            Inspiración del mes <span className="italic">✨</span>
-          </h2>
+          <p className="text-sm font-bold uppercase tracking-widest text-pink">{eyebrow}</p>
+          <h2 className="font-display text-3xl md:text-5xl mt-1">{title}</h2>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 grid-rows-2 gap-4 md:gap-6 h-[600px] md:h-[520px]">

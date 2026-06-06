@@ -7,13 +7,13 @@ export const dynamic = "force-dynamic";
 export default async function EditProductPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }) {
-  const { id } = await params;
+  const { slug } = await params;
   const supabase = createServiceClient();
 
   const [{ data: product }, { data: categories }] = await Promise.all([
-    supabase.from("products").select("*").eq("id", id).single(),
+    supabase.from("products").select("*").eq("slug", slug).single(),
     supabase.from("categories").select("*").order("position", { ascending: true }),
   ]);
 

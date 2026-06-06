@@ -5,7 +5,7 @@ import { applyDiscount, formatPrice } from "@/lib/utils";
 import { ProductGallery } from "./ProductGallery";
 import { AddToCart } from "./AddToCart";
 import { ProductCard } from "@/components/storefront/ProductCard";
-import { Header } from "@/components/storefront/Header";
+import { SiteHeader } from "@/components/storefront/SiteHeader";
 import { Footer } from "@/components/storefront/Footer";
 
 export const revalidate = 60;
@@ -30,7 +30,7 @@ export default async function ProductPage({
 
   return (
     <>
-      <Header />
+      <SiteHeader />
 
       <main className="flex-1 max-w-7xl mx-auto px-4 md:px-8 py-8 w-full">
 

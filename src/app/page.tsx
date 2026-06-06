@@ -1,5 +1,5 @@
 import { NewsBar } from "@/components/storefront/NewsBar";
-import { Header } from "@/components/storefront/Header";
+import { SiteHeader } from "@/components/storefront/SiteHeader";
 import { Hero } from "@/components/storefront/Hero";
 import { CategoryChips } from "@/components/storefront/CategoryChips";
 import { TopSellers } from "@/components/storefront/TopSellers";
@@ -14,19 +14,28 @@ import {
   getBanners,
   getFeaturedProducts,
   getProductsByCategory,
+  getActiveFlashSale,
+  getBrands,
+  getEditorialHeading,
 } from "@/lib/data/queries";
 
 export const revalidate = 60;
 
 export default async function Home() {
-  const [news, categories, mosaicBanners, featured, cuidado, ojos] = await Promise.all([
-    getNews(),
-    getCategories(),
-    getBanners("mosaic"),
-    getFeaturedProducts(8),
-    getProductsByCategory("cuidado-personal", 6),
-    getProductsByCategory("ojos", 6),
-  ]);
+  const [news, categories, heroBanners, mosaicBanners, featured, cuidado, ojos, flashSale, brands] =
+    await Promise.all([
+      getNews(),
+      getCategories(),
+      getBanners("hero"),
+      getBanners("mosaic"),
+      getFeaturedProducts(8),
+      getProductsByCategory("cuidado-personal", 6),
+      getProductsByCategory("ojos", 6),
+      getActiveFlashSale(),
+      getBrands(),
+    ]);
+  const heroBanner = heroBanners[0] ?? null;
+  const editorial = await getEditorialHeading();
 
   const cuidadoCat = categories.find((c) => c.slug === "cuidado-personal");
   const ojosCat = categories.find((c) => c.slug === "ojos");
@@ -34,9 +43,9 @@ export default async function Home() {
   return (
     <>
       <NewsBar items={news} />
-      <Header />
+      <SiteHeader />
       <main className="flex-1">
-        <Hero />
+        {heroBanner && <Hero banner={heroBanner} />}
         <CategoryChips categories={categories} />
         <TopSellers products={featured} />
         {cuidadoCat && (
@@ -48,7 +57,7 @@ export default async function Home() {
             bgClass="bg-mint-soft"
           />
         )}
-        <Mosaic banners={mosaicBanners} />
+        <Mosaic banners={mosaicBanners} eyebrow={editorial.eyebrow} title={editorial.title} />
         {ojosCat && (
           <ProductCarousel
             category={ojosCat}
@@ -58,8 +67,8 @@ export default async function Home() {
             bgClass="bg-lavender-soft"
           />
         )}
-        <FlashSale />
-        <BrandStrip />
+        {flashSale && <FlashSale data={flashSale} />}
+        <BrandStrip brands={brands} />
       </main>
       <Footer />
     </>

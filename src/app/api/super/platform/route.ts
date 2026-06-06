@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createServiceClient } from "@/lib/supabase/service";
 
@@ -7,6 +8,7 @@ export const dynamic = "force-dynamic";
 
 const updateSchema = z.object({
   active: z.boolean().optional(),
+  demo_mode: z.boolean().optional(),
   message_when_off: z.string().min(1).max(500).optional(),
 });
 
@@ -27,7 +29,7 @@ export async function GET(request: NextRequest) {
   const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("platform_settings")
-    .select("active, message_when_off, updated_at")
+    .select("active, demo_mode, message_when_off, updated_at")
     .eq("id", 1)
     .single();
 
@@ -66,12 +68,15 @@ export async function POST(request: NextRequest) {
     .from("platform_settings")
     .update(update)
     .eq("id", 1)
-    .select("active, message_when_off, updated_at")
+    .select("active, demo_mode, message_when_off, updated_at")
     .single();
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  // Storefront caches (ISR + theme/demo reads) — refresh the whole tree.
+  revalidatePath("/", "layout");
 
   return NextResponse.json(data);
 }

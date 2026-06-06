@@ -9,6 +9,10 @@ import {
   Image as ImageIcon,
   Megaphone,
   Shield,
+  ShoppingBag,
+  Palette,
+  Zap,
+  Sparkles,
   LogOut,
   Menu,
   X,
@@ -18,10 +22,14 @@ import { cn } from "@/lib/utils";
 
 const NAV = [
   { label: "Dashboard",  href: "/admin",            icon: LayoutDashboard },
+  { label: "Pedidos",    href: "/admin/orders",     icon: ShoppingBag },
   { label: "Productos",  href: "/admin/products",   icon: Package },
   { label: "Categorías", href: "/admin/categories", icon: Tag },
   { label: "Banners",    href: "/admin/banners",    icon: ImageIcon },
   { label: "News",       href: "/admin/news",       icon: Megaphone },
+  { label: "Flash Sale", href: "/admin/flash-sale", icon: Zap },
+  { label: "Marcas",     href: "/admin/brands",     icon: Sparkles },
+  { label: "Tema",       href: "/admin/theme",      icon: Palette },
   { label: "Admins",     href: "/admin/admins",     icon: Shield },
 ];
 

@@ -1,6 +1,6 @@
 import { Zap, PackageOpen } from "lucide-react";
 import { getOnSaleProducts, getCategories } from "@/lib/data/queries";
-import { Header } from "@/components/storefront/Header";
+import { SiteHeader } from "@/components/storefront/SiteHeader";
 import { Footer } from "@/components/storefront/Footer";
 import { ProductSearch } from "../productos/ProductSearch";
 
@@ -22,7 +22,7 @@ export default async function OfertasPage() {
 
   return (
     <>
-      <Header />
+      <SiteHeader />
 
       <main className="flex-1 w-full">
 

@@ -7,14 +7,20 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { getAdminUser } from "@/lib/auth";
 import { uploadImage, deleteImageByUrl } from "@/lib/storage";
 
-const SLOTS = ["hero", "mid", "sidebar"] as const;
+const SLOTS = ["hero", "mosaic", "sale"] as const;
 
 const schema = z.object({
   id: z.string().uuid().optional(),
   title: z.string().min(1).max(120),
   subtitle: z.string().max(200).optional().nullable(),
+  cta_label: z.string().max(40).optional().nullable(),
   link: z.string().url().optional().nullable().or(z.literal("")),
-  slot: z.enum(SLOTS).default("hero"),
+  eyebrow_text: z.string().max(40).optional().nullable(),
+  eyebrow_color: z.string().max(9).optional().nullable(),
+  cta2_label: z.string().max(40).optional().nullable(),
+  cta2_link: z.string().max(200).optional().nullable(),
+  marquee_text: z.string().max(60).optional().nullable(),
+  slot: z.enum(SLOTS).default("mosaic"),
   position: z.coerce.number().int().min(0).default(0),
   active: z.boolean().default(true),
 });
@@ -36,8 +42,14 @@ export async function saveBanner(
     id: formData.get("id") || undefined,
     title: formData.get("title"),
     subtitle: formData.get("subtitle") || null,
+    cta_label: formData.get("cta_label") || null,
     link: formData.get("link") || null,
-    slot: formData.get("slot") || "hero",
+    eyebrow_text: formData.get("eyebrow_text") || null,
+    eyebrow_color: formData.get("eyebrow_color") || null,
+    cta2_label: formData.get("cta2_label") || null,
+    cta2_link: formData.get("cta2_link") || null,
+    marquee_text: formData.get("marquee_text") || null,
+    slot: formData.get("slot") || "mosaic",
     position: formData.get("position") || 0,
     active: formData.get("active") === "on",
   });
@@ -50,7 +62,7 @@ export async function saveBanner(
     return { error: "Revisá los campos", fieldErrors };
   }
 
-  const { id, title, subtitle, link, slot, position, active } = parsed.data;
+  const { id, title, subtitle, cta_label, link, eyebrow_text, eyebrow_color, cta2_label, cta2_link, marquee_text, slot, position, active } = parsed.data;
   const supabase = createServiceClient();
 
   // Handle image upload
@@ -73,7 +85,13 @@ export async function saveBanner(
   const payload = {
     title,
     subtitle: subtitle || null,
+    cta_label: cta_label || null,
     link: link || null,
+    eyebrow_text: eyebrow_text || null,
+    eyebrow_color: eyebrow_color || null,
+    cta2_label: cta2_label || null,
+    cta2_link: cta2_link || null,
+    marquee_text: marquee_text || null,
     slot,
     position,
     active,
@@ -95,6 +113,92 @@ export async function saveBanner(
   revalidatePath("/admin/banners");
   revalidatePath("/");
   redirect("/admin/banners");
+}
+
+// ── Hero upsert ────────────────────────────────────────────────────────────
+
+const heroSchema = z.object({
+  id: z.string().uuid().optional(),
+  title: z.string().min(1).max(120),
+  subtitle: z.string().max(200).optional().nullable(),
+  cta_label: z.string().max(40).optional().nullable(),
+  link: z.string().max(500).optional().nullable(),
+  eyebrow_text: z.string().max(40).optional().nullable(),
+  eyebrow_color: z.string().max(9).optional().nullable(),
+  cta2_label: z.string().max(40).optional().nullable(),
+  cta2_link: z.string().max(200).optional().nullable(),
+  marquee_text: z.string().max(60).optional().nullable(),
+  active: z.boolean().default(true),
+});
+
+export type HeroFormState = { error?: string; fieldErrors?: Record<string, string> };
+
+export async function saveHero(
+  _prev: HeroFormState,
+  formData: FormData,
+): Promise<HeroFormState> {
+  await ensureAdmin();
+
+  const parsed = heroSchema.safeParse({
+    id: formData.get("id") || undefined,
+    title: formData.get("title"),
+    subtitle: formData.get("subtitle") || null,
+    cta_label: formData.get("cta_label") || null,
+    link: formData.get("link") || null,
+    eyebrow_text: formData.get("eyebrow_text") || null,
+    eyebrow_color: formData.get("eyebrow_color") || null,
+    cta2_label: formData.get("cta2_label") || null,
+    cta2_link: formData.get("cta2_link") || null,
+    marquee_text: formData.get("marquee_text") || null,
+    active: formData.get("active") === "on",
+  });
+
+  if (!parsed.success) {
+    const fieldErrors: Record<string, string> = {};
+    for (const issue of parsed.error.issues) {
+      fieldErrors[issue.path.join(".")] = issue.message;
+    }
+    return { error: "Revisá los campos", fieldErrors };
+  }
+
+  const { id, ...fields } = parsed.data;
+  const supabase = createServiceClient();
+
+  let image_url: string | undefined;
+  const imageFile = formData.get("image") as File | null;
+  if (imageFile && imageFile.size > 0) {
+    try {
+      image_url = await uploadImage(imageFile, "banner-images", "banners");
+    } catch (err) {
+      return { error: `Error subiendo imagen: ${err instanceof Error ? err.message : "desconocido"}` };
+    }
+  }
+
+  const existingUrl = String(formData.get("existing_image_url") ?? "");
+  const finalImageUrl = image_url ?? existingUrl;
+  if (!finalImageUrl) return { error: "La imagen es obligatoria" };
+
+  const payload = {
+    ...fields,
+    slot: "hero" as const,
+    position: 0,
+    image_url: finalImageUrl,
+  };
+
+  if (id) {
+    if (image_url && existingUrl && existingUrl !== image_url) {
+      await deleteImageByUrl(existingUrl, "banner-images");
+    }
+    const { error } = await supabase.from("banners").update(payload).eq("id", id);
+    if (error) return { error: error.message };
+  } else {
+    const { error } = await supabase.from("banners").insert(payload);
+    if (error) return { error: error.message };
+  }
+
+  revalidatePath("/admin/banners/hero");
+  revalidatePath("/");
+  redirect("/admin/banners/hero");
 }
 
 export async function deleteBanner(formData: FormData) {

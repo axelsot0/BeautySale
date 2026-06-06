@@ -1,9 +1,36 @@
 import { createClient } from "@/lib/supabase/server";
-import { mockCategories, mockProducts, mockBanners, mockNews } from "./mock";
-import type { Category, Product, Banner, News } from "./types";
+import { mockCategories, mockProducts, mockBanners, mockNews, mockFlashSale, mockBrands } from "./mock";
+import { getDemoMode } from "./demo";
+import { DEFAULT_EDITORIAL_EYEBROW, DEFAULT_EDITORIAL_TITLE } from "@/lib/theme";
+import { parseSocialLinks, type SocialLinks } from "@/lib/social";
+import type { Category, Product, Banner, News, FlashSale, Brand } from "./types";
+
+export async function getSocialLinks(): Promise<SocialLinks> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("platform_settings")
+    .select("social_links")
+    .eq("id", 1)
+    .single();
+  return parseSocialLinks(data?.social_links);
+}
+
+export async function getEditorialHeading(): Promise<{ eyebrow: string; title: string }> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("platform_settings")
+    .select("editorial_eyebrow, editorial_title")
+    .eq("id", 1)
+    .single();
+  return {
+    eyebrow: data?.editorial_eyebrow?.trim() || DEFAULT_EDITORIAL_EYEBROW,
+    title: data?.editorial_title?.trim() || DEFAULT_EDITORIAL_TITLE,
+  };
+}
 
 /**
- * Server-side fetchers. Each falls back to mock data when the DB has no rows yet.
+ * Server-side fetchers. When the DB has no rows AND demo mode is on, they fall back
+ * to built-in sample data. With demo mode off, they return empty/null (real data only).
  */
 
 export async function getCategories(): Promise<Category[]> {
@@ -13,7 +40,7 @@ export async function getCategories(): Promise<Category[]> {
     .select("*")
     .order("position", { ascending: true });
 
-  if (error || !data || data.length === 0) return mockCategories;
+  if (error || !data || data.length === 0) return (await getDemoMode()) ? mockCategories : [];
   return data;
 }
 
@@ -25,7 +52,10 @@ export async function getCategoryBySlug(slug: string): Promise<Category | null> 
     .eq("slug", slug)
     .single();
 
-  if (error || !data) return mockCategories.find((c) => c.slug === slug) ?? null;
+  if (error || !data) {
+    if (!(await getDemoMode())) return null;
+    return mockCategories.find((c) => c.slug === slug) ?? null;
+  }
   return data;
 }
 
@@ -37,7 +67,7 @@ export async function getNews(): Promise<News[]> {
     .eq("active", true)
     .order("position", { ascending: true });
 
-  if (error || !data || data.length === 0) return mockNews;
+  if (error || !data || data.length === 0) return (await getDemoMode()) ? mockNews : [];
   return data;
 }
 
@@ -48,6 +78,7 @@ export async function getBanners(slot?: Banner["slot"]): Promise<Banner[]> {
   const { data, error } = await q.order("position", { ascending: true });
 
   if (error || !data || data.length === 0) {
+    if (!(await getDemoMode())) return [];
     const all = mockBanners;
     return slot ? all.filter((b) => b.slot === slot) : all;
   }
@@ -64,6 +95,7 @@ export async function getFeaturedProducts(limit = 8): Promise<Product[]> {
     .limit(limit);
 
   if (error || !data || data.length === 0) {
+    if (!(await getDemoMode())) return [];
     return mockProducts.filter((p) => p.featured).slice(0, limit);
   }
   return data;
@@ -77,7 +109,8 @@ export async function getProductsByCategory(slug: string, limit = 48): Promise<P
     .eq("slug", slug)
     .single();
 
-  const categoryId = cat?.id ?? mockCategories.find((c) => c.slug === slug)?.id;
+  const demo = await getDemoMode();
+  const categoryId = cat?.id ?? (demo ? mockCategories.find((c) => c.slug === slug)?.id : undefined);
   if (!categoryId) return [];
 
   const { data, error } = await supabase
@@ -88,6 +121,7 @@ export async function getProductsByCategory(slug: string, limit = 48): Promise<P
     .limit(limit);
 
   if (error || !data || data.length === 0) {
+    if (!demo) return [];
     return mockProducts.filter((p) => p.category_id === categoryId).slice(0, limit);
   }
   return data;
@@ -104,6 +138,7 @@ export async function getProductBySlug(
     .single();
 
   if (error || !data) {
+    if (!(await getDemoMode())) return null;
     const mock = mockProducts.find((p) => p.slug === slug);
     if (!mock) return null;
     const cat = mockCategories.find((c) => c.id === mock.category_id);
@@ -130,10 +165,33 @@ export async function getRelatedProducts(
     .limit(limit);
 
   if (error || !data || data.length === 0) {
+    if (!(await getDemoMode())) return [];
     return mockProducts
       .filter((p) => p.category_id === categoryId && p.slug !== excludeSlug)
       .slice(0, limit);
   }
+  return data;
+}
+
+// Flash sale: once the admin saves a row it owns the behavior (active=false => hidden).
+// While no row exists, demo mode decides whether to show the sample flash sale.
+export async function getActiveFlashSale(): Promise<FlashSale | null> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("flash_sale").select("*").eq("id", 1).maybeSingle();
+
+  if (data) return data.active ? data : null;
+  return (await getDemoMode()) ? mockFlashSale : null;
+}
+
+export async function getBrands(): Promise<Brand[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("brands")
+    .select("*")
+    .eq("active", true)
+    .order("position", { ascending: true });
+
+  if (error || !data || data.length === 0) return (await getDemoMode()) ? mockBrands : [];
   return data;
 }
 
@@ -147,6 +205,7 @@ export async function getOnSaleProducts(limit = 48): Promise<Product[]> {
     .limit(limit);
 
   if (error || !data || data.length === 0) {
+    if (!(await getDemoMode())) return [];
     return mockProducts.filter((p) => p.on_sale).slice(0, limit);
   }
   return data;

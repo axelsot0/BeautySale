@@ -7,11 +7,11 @@ export const dynamic = "force-dynamic";
 export default async function EditCategoryPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }) {
-  const { id } = await params;
+  const { slug } = await params;
   const supabase = createServiceClient();
-  const { data } = await supabase.from("categories").select("*").eq("id", id).single();
+  const { data } = await supabase.from("categories").select("*").eq("slug", slug).single();
 
   if (!data) notFound();
 

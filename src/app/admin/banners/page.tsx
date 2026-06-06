@@ -6,16 +6,39 @@ import { deleteBanner, toggleBannerActive } from "./actions";
 export const dynamic = "force-dynamic";
 
 const SLOT_LABELS: Record<string, string> = {
-  hero: "Hero",
-  mid: "Mid",
-  sidebar: "Sidebar",
+  mosaic: "Mosaic",
+  sale: "Sale",
 };
+
+function Tabs({ active }: { active: "hero" | "banners" }) {
+  return (
+    <div className="flex gap-1 p-1 rounded-2xl bg-plum/5 w-fit">
+      <a
+        href="/admin/banners/hero"
+        className={`rounded-xl px-5 py-2 text-sm font-semibold transition ${
+          active === "hero" ? "bg-white shadow text-plum" : "text-plum/60 hover:text-plum"
+        }`}
+      >
+        Hero
+      </a>
+      <a
+        href="/admin/banners"
+        className={`rounded-xl px-5 py-2 text-sm font-semibold transition ${
+          active === "banners" ? "bg-white shadow text-plum" : "text-plum/60 hover:text-plum"
+        }`}
+      >
+        Banners
+      </a>
+    </div>
+  );
+}
 
 export default async function AdminBannersPage() {
   const supabase = createServiceClient();
   const { data: banners } = await supabase
     .from("banners")
     .select("*")
+    .neq("slot", "hero")
     .order("position", { ascending: true });
 
   return (
@@ -24,7 +47,7 @@ export default async function AdminBannersPage() {
         <div>
           <p className="text-sm font-bold uppercase tracking-widest text-pink">visual</p>
           <h1 className="font-display text-4xl mt-1">Banners</h1>
-          <p className="text-plum-soft mt-1">Imágenes del hero y secciones intermedias.</p>
+          <p className="text-plum-soft mt-1">Secciones de mosaico y promos.</p>
         </div>
         <a
           href="/admin/banners/new"
@@ -35,18 +58,18 @@ export default async function AdminBannersPage() {
         </a>
       </header>
 
+      <Tabs active="banners" />
+
       <div className="rounded-[24px] bg-white border border-plum/5 overflow-hidden">
         {banners && banners.length > 0 ? (
           <ul className="divide-y divide-plum/5">
             {banners.map((b) => (
               <li key={b.id} className="px-5 py-4 flex items-center gap-4">
-                {/* Thumb */}
                 <div className="h-14 w-24 rounded-xl overflow-hidden shrink-0 bg-plum/5">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={b.image_url} alt={b.title} className="h-full w-full object-cover" />
                 </div>
 
-                {/* Info */}
                 <div className="flex-1 min-w-0">
                   <p className="font-medium line-clamp-1">{b.title}</p>
                   {b.subtitle && (
@@ -54,15 +77,12 @@ export default async function AdminBannersPage() {
                   )}
                 </div>
 
-                {/* Slot badge */}
                 <span className="hidden md:block text-xs font-bold uppercase tracking-wider bg-lavender/20 text-plum rounded-full px-3 py-1">
                   {SLOT_LABELS[b.slot] ?? b.slot}
                 </span>
 
-                {/* pos */}
                 <span className="text-xs text-plum-soft hidden md:block">pos {b.position}</span>
 
-                {/* Active toggle */}
                 <form action={toggleBannerActive}>
                   <input type="hidden" name="id" value={b.id} />
                   <input type="hidden" name="current" value={String(b.active)} />
@@ -77,7 +97,6 @@ export default async function AdminBannersPage() {
                   </button>
                 </form>
 
-                {/* Edit */}
                 <a
                   href={`/admin/banners/${b.id}`}
                   aria-label="Editar"

@@ -14,6 +14,7 @@ export function CategoryChips({
 }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const needsScroll = categories.length > VISIBLE;
+  const isEmpty = categories.length === 0;
 
   // Auto-scroll suave cuando hay más categorías de las que caben
   useEffect(() => {
@@ -47,6 +48,8 @@ export function CategoryChips({
       track.removeEventListener("touchend", onLeave);
     };
   }, [needsScroll]);
+
+  if (isEmpty) return null;
 
   return (
     <section id="categorias" className="py-10 md:py-16">

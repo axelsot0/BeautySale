@@ -4,6 +4,27 @@ import { useEffect, useState } from "react";
 import { Heart, Menu, Search, ShoppingBag, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCartStore } from "@/lib/cart/store";
+import { DEFAULT_SITE_NAME } from "@/lib/theme";
+
+// Renders the brand wordmark. Default name keeps the two-tone "Beauty·Sale" look;
+// any custom name renders with its last word accented in pink.
+function Wordmark({ name }: { name: string }) {
+  if (name === DEFAULT_SITE_NAME) {
+    return (
+      <>
+        Beauty<span className="text-pink italic">Sale</span>
+      </>
+    );
+  }
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return <span className="text-pink italic">{parts[0]}</span>;
+  const last = parts.pop();
+  return (
+    <>
+      {parts.join(" ")} <span className="text-pink italic">{last}</span>
+    </>
+  );
+}
 
 const NAV = [
   { label: "Todos",            href: "/productos" },
@@ -13,7 +34,7 @@ const NAV = [
   { label: "Rostro",           href: "/c/rostro" },
 ];
 
-export function Header() {
+export function Header({ logoUrl, siteName = DEFAULT_SITE_NAME }: { logoUrl?: string | null; siteName?: string }) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { openCart, totalItems } = useCartStore();
@@ -48,7 +69,12 @@ export function Header() {
         </button>
 
         <a href="/" className="font-display text-2xl md:text-3xl tracking-tight">
-          Beauty<span className="text-pink italic">Sale</span>
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoUrl} alt={siteName} className="h-9 md:h-11 w-auto object-contain" />
+          ) : (
+            <Wordmark name={siteName} />
+          )}
         </a>
 
         <nav className="hidden md:flex items-center gap-1 mx-auto">
@@ -100,7 +126,12 @@ export function Header() {
           <div className="absolute left-0 top-0 bottom-0 w-[80%] max-w-sm bg-cream p-6 flex flex-col gap-2">
             <div className="flex items-center justify-between mb-4">
               <span className="font-display text-2xl">
-                Beauty<span className="text-pink italic">Sale</span>
+                {logoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={logoUrl} alt={siteName} className="h-9 w-auto object-contain" />
+                ) : (
+                  <Wordmark name={siteName} />
+                )}
               </span>
               <button
                 aria-label="Cerrar menú"

@@ -140,7 +140,7 @@ export default async function AdminProductsPage() {
                       <td className="px-3 py-3">
                         <div className="flex items-center gap-1">
                           <a
-                            href={`/admin/products/${p.id}`}
+                            href={`/admin/products/${p.slug}`}
                             aria-label="Editar"
                             className="grid h-9 w-9 place-items-center rounded-full hover:bg-plum/5"
                           >

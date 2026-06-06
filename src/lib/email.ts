@@ -235,6 +235,102 @@ function buildOrderEmail(data: OrderConfirmationData): string {
 </html>`;
 }
 
+// ── Newsletter welcome ─────────────────────────────────────────────────────────
+
+function buildNewsletterEmail(email: string, code: string): string {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  return `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tu 10% OFF · BeautySale</title>
+</head>
+<body style="margin:0;padding:0;background:#FFF8F0;font-family:'Helvetica Neue',Arial,sans-serif;color:#2D1B4E;">
+  <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#FFF8F0;padding:32px 16px;">
+    <tr><td align="center">
+      <table cellpadding="0" cellspacing="0" border="0" width="560" style="max-width:560px;">
+
+        <tr><td style="padding-bottom:24px;text-align:center;">
+          <h1 style="margin:0;font-size:28px;font-weight:800;color:#2D1B4E;">
+            Beauty<span style="color:#FF4D8B;font-style:italic;">Sale</span>
+          </h1>
+        </td></tr>
+
+        <tr><td>
+          <table cellpadding="0" cellspacing="0" border="0" width="100%"
+            style="background:linear-gradient(135deg,#FF4D8B,#B5A3E8);border-radius:24px;padding:32px;text-align:center;">
+            <tr><td>
+              <div style="font-size:48px;margin-bottom:12px;">💌</div>
+              <h2 style="margin:0 0 8px;font-size:24px;font-weight:800;color:#fff;">
+                Bienvenida al Glow Squad
+              </h2>
+              <p style="margin:0;font-size:15px;color:rgba(255,255,255,0.9);">
+                Tu código de 10% OFF para la primera compra está abajo.
+              </p>
+            </td></tr>
+          </table>
+        </td></tr>
+
+        <tr><td style="padding:24px 0 0;">
+          <table cellpadding="0" cellspacing="0" border="0" width="100%"
+            style="background:#fff;border-radius:20px;padding:28px;text-align:center;">
+            <tr><td>
+              <p style="margin:0 0 12px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#5C4A82;">
+                Tu código de descuento
+              </p>
+              <div style="display:inline-block;background:#FFF8F0;border:2px dashed #FF4D8B;border-radius:16px;padding:16px 32px;">
+                <span style="font-size:28px;font-weight:900;letter-spacing:0.15em;color:#FF4D8B;">${code}</span>
+              </div>
+              <p style="margin:16px 0 0;font-size:13px;color:#5C4A82;line-height:1.5;">
+                Válido para una sola compra · No acumulable con otras promociones
+              </p>
+            </td></tr>
+          </table>
+        </td></tr>
+
+        <tr><td style="padding:24px 0;text-align:center;">
+          <a href="${appUrl}"
+            style="display:inline-block;background:#FF4D8B;color:#fff;font-size:15px;font-weight:700;
+                   padding:14px 32px;border-radius:999px;text-decoration:none;">
+            Ir a la tienda →
+          </a>
+        </td></tr>
+
+        <tr><td style="text-align:center;padding-top:8px;border-top:1px solid #f0e8f5;">
+          <p style="margin:16px 0 0;font-size:12px;color:#5C4A82;">
+            © ${new Date().getFullYear()} BeautySale · Todos los derechos reservados
+          </p>
+          <p style="margin:4px 0 0;font-size:11px;color:#B5A3E8;">
+            Recibiste este email porque te suscribiste con ${email}.
+          </p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
+export async function sendNewsletterWelcome(email: string, code: string): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.warn("[email] RESEND_API_KEY not set — skipping newsletter welcome");
+    return;
+  }
+  const from = process.env.RESEND_FROM_EMAIL ?? "BeautySale <onboarding@resend.dev>";
+  const { error } = await getResend().emails.send({
+    from,
+    to: [email],
+    subject: "Tu 10% OFF de bienvenida al Glow Squad 💌",
+    html: buildNewsletterEmail(email, code),
+  });
+  if (error) {
+    console.error("[email] Failed to send newsletter welcome:", error);
+  }
+}
+
 // ── Send ──────────────────────────────────────────────────────────────────────
 
 export async function sendOrderConfirmation(data: OrderConfirmationData): Promise<void> {

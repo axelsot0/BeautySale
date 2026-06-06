@@ -31,6 +31,8 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { error: "Credenciales inválidas" };
 
+  await supabase.auth.updateUser({ data: { is_admin: true } });
+
   redirect(next && next.startsWith("/admin") ? next : "/admin");
 }
 

@@ -1,7 +1,8 @@
 import { getCategories } from "@/lib/data/queries";
+import { getDemoMode } from "@/lib/data/demo";
 import { createServiceClient } from "@/lib/supabase/service";
 import { mockProducts } from "@/lib/data/mock";
-import { Header } from "@/components/storefront/Header";
+import { SiteHeader } from "@/components/storefront/SiteHeader";
 import { Footer } from "@/components/storefront/Footer";
 import { ProductSearch } from "./ProductSearch";
 
@@ -15,7 +16,7 @@ async function getAllProducts() {
     .select("*")
     .order("created_at", { ascending: false });
 
-  if (error || !data || data.length === 0) return mockProducts;
+  if (error || !data || data.length === 0) return (await getDemoMode()) ? mockProducts : [];
   return data;
 }
 
@@ -27,7 +28,7 @@ export default async function ProductosPage() {
 
   return (
     <>
-      <Header />
+      <SiteHeader />
 
       <main className="flex-1 max-w-7xl mx-auto px-4 md:px-8 py-8 w-full">
         <header className="mb-8">

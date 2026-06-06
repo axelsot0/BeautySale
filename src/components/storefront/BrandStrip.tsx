@@ -1,25 +1,29 @@
-const BRANDS = [
-  { name: "Lumière",   className: "font-serif italic font-light" },
-  { name: "GLOSSY",    className: "font-display font-extrabold tracking-tight" },
-  { name: "petal & co",className: "font-sans font-light tracking-[0.3em] uppercase" },
-  { name: "Aurora",    className: "font-display font-medium italic" },
-  { name: "BLOOM",     className: "font-sans font-black tracking-widest" },
-  { name: "Sunkissed", className: "font-display font-semibold" },
-  { name: "MIRA",      className: "font-sans font-thin tracking-[0.5em]" },
-  { name: "Rosé Lab",  className: "font-display italic font-bold" },
-];
+import type { Brand } from "@/lib/data/types";
+import { brandClass } from "@/lib/brand-styles";
 
-export function BrandStrip() {
-  const loop = [...BRANDS, ...BRANDS];
+export function BrandStrip({ brands }: { brands: Brand[] }) {
+  if (brands.length === 0) return null;
+  const loop = [...brands, ...brands];
+
   return (
     <section className="py-8 md:py-10 border-y border-plum/10 group">
       <div className="overflow-hidden">
         <div className="flex items-center gap-12 md:gap-16 animate-marquee whitespace-nowrap text-2xl md:text-3xl text-plum-soft group-hover:text-plum transition-colors">
-          {loop.map((b, i) => (
-            <span key={`${b.name}-${i}`} className={b.className}>
-              {b.name}
-            </span>
-          ))}
+          {loop.map((b, i) =>
+            b.logo_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                key={`${b.id}-${i}`}
+                src={b.logo_url}
+                alt={b.name}
+                className="h-8 md:h-10 w-auto object-contain shrink-0 opacity-70 group-hover:opacity-100 transition"
+              />
+            ) : (
+              <span key={`${b.id}-${i}`} className={brandClass(b.font_style)}>
+                {b.name}
+              </span>
+            ),
+          )}
         </div>
       </div>
     </section>

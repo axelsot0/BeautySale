@@ -1,4 +1,5 @@
-import type { Category, Product, Banner, News } from "./types";
+import type { Category, Product, Banner, News, FlashSale, Brand } from "./types";
+import { slugify } from "@/lib/utils";
 
 const now = new Date().toISOString();
 
@@ -20,7 +21,7 @@ const product = (
 ): Product => ({
   id,
   title,
-  slug: id,
+  slug: slugify(title),
   description: "",
   price,
   discount_percent: opts.discount_percent ?? 0,
@@ -56,12 +57,59 @@ export const mockProducts: Product[] = [
   product("p18", "Pinceles ojos kit x4",        17.00, "c2"),
 ];
 
+const heroExtra = {
+  eyebrow_text: "✨ Nueva colección",
+  eyebrow_color: "#FFE066",
+  cta2_label: "Ver categorías",
+  cta2_link: "#categorias",
+  marquee_text: "NUEVO ★",
+};
+const noHeroExtra = {
+  eyebrow_text: null,
+  eyebrow_color: null,
+  cta2_label: null,
+  cta2_link: null,
+  marquee_text: null,
+};
+
 export const mockBanners: Banner[] = [
-  { id: "b1", title: "Glow squad — colección primavera", subtitle: "Descubrí tus nuevos imprescindibles", image_url: "", link: "/colecciones/primavera", position: 0, active: true, slot: "hero",   created_at: now },
-  { id: "b2", title: "Editorial: rituales de noche",     subtitle: null,                                   image_url: "", link: "/blog/rituales",         position: 0, active: true, slot: "mosaic", created_at: now },
-  { id: "b3", title: "Labios que matan",                 subtitle: null,                                   image_url: "", link: "/c/labios",              position: 1, active: true, slot: "mosaic", created_at: now },
-  { id: "b4", title: "Mirada que mata",                  subtitle: null,                                   image_url: "", link: "/c/ojos",                position: 2, active: true, slot: "mosaic", created_at: now },
+  { id: "b1", title: "Glow squad — colección primavera", subtitle: "Descubrí tus nuevos imprescindibles", cta_label: "Comprar ahora", image_url: "", link: "/colecciones/primavera", position: 0, active: true, slot: "hero",   created_at: now, ...heroExtra },
+  { id: "b2", title: "Editorial: rituales de noche",     subtitle: null,                                   cta_label: null,            image_url: "", link: "/blog/rituales",         position: 0, active: true, slot: "mosaic", created_at: now, ...noHeroExtra },
+  { id: "b3", title: "Labios que matan",                 subtitle: null,                                   cta_label: null,            image_url: "", link: "/c/labios",              position: 1, active: true, slot: "mosaic", created_at: now, ...noHeroExtra },
+  { id: "b4", title: "Mirada que mata",                  subtitle: null,                                   cta_label: null,            image_url: "", link: "/c/ojos",                position: 2, active: true, slot: "mosaic", created_at: now, ...noHeroExtra },
 ];
+
+const brand = (name: string, font_style: string, position: number): Brand => ({
+  id: `brand-${position}`,
+  name,
+  logo_url: null,
+  font_style,
+  position,
+  active: true,
+  created_at: now,
+});
+
+export const mockBrands: Brand[] = [
+  brand("Lumière", "serif-italic", 0),
+  brand("GLOSSY", "display-bold", 1),
+  brand("petal & co", "sans-wide", 2),
+  brand("Aurora", "display-italic", 3),
+  brand("BLOOM", "sans-black", 4),
+  brand("Sunkissed", "display-semibold", 5),
+  brand("MIRA", "sans-thin", 6),
+  brand("Rosé Lab", "display-bold-italic", 7),
+];
+
+export const mockFlashSale: FlashSale = {
+  id: 1,
+  active: true,
+  title: "Flash sale 24hs",
+  discount_label: "-40% OFF",
+  description: "En selección de cuidado facial y labiales. Sin código, descuento aplicado al carrito.",
+  cta_link: "/ofertas",
+  ends_at: null, // null => rolling 24h countdown in the component
+  updated_at: now,
+};
 
 export const mockNews: News[] = [
   { id: "n1", text: "✨ Envío gratis en compras +$50",          active: true, position: 0, created_at: now },
