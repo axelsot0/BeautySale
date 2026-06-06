@@ -29,7 +29,7 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) return { error: "Credenciales inválidas" };
+  if (error) return { error: `[debug] ${error.message} (${error.status})` };
 
   await supabase.auth.updateUser({ data: { is_admin: true } });
 
