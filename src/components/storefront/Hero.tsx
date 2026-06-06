@@ -19,7 +19,7 @@ export function Hero({ banner }: { banner: Banner }) {
 
   return (
     <section className="relative overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 md:px-8 py-10 md:py-20 grid md:grid-cols-2 gap-10 md:gap-16 items-center">
+      <div className={`max-w-7xl mx-auto px-4 md:px-8 py-10 md:py-20 items-center ${banner.image_url ? "grid md:grid-cols-2 gap-10 md:gap-16" : "flex"}`}>
         <div className="space-y-6 md:space-y-8 z-10">
           <span
             className="inline-block rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-plum -rotate-2"
@@ -50,38 +50,28 @@ export function Hero({ banner }: { banner: Banner }) {
           </div>
         </div>
 
-        <div className="relative">
-          <div className={`relative aspect-square rounded-[40px] overflow-hidden ${banner.image_url ? "bg-pink shadow-[0_24px_60px_rgba(255,77,139,0.3)]" : "bg-plum/5"}`}>
-            {banner.image_url && (
-              // eslint-disable-next-line @next/next/no-img-element
+        {banner.image_url && (
+          <div className="relative">
+            <div className="relative aspect-square rounded-[40px] bg-pink overflow-hidden shadow-[0_24px_60px_rgba(255,77,139,0.3)]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={banner.image_url} alt={banner.title} className="absolute inset-0 h-full w-full object-cover" />
-            )}
-            {banner.image_url && (
-              <>
-                <div className="absolute -top-8 -left-8 h-32 w-32 rounded-full bg-butter animate-float" />
-                <div
-                  className="absolute -bottom-10 -right-10 h-40 w-40 rounded-full bg-mint animate-float"
-                  style={{ animationDelay: "1.5s" }}
-                />
-                <div
-                  className="absolute top-1/2 right-8 h-16 w-16 rounded-full bg-lavender animate-float"
-                  style={{ animationDelay: "0.8s" }}
-                />
-                <div className="absolute bottom-0 left-0 right-0 overflow-hidden bg-cream py-2">
-                  <div className="flex animate-marquee-hero font-display font-bold text-plum whitespace-nowrap">
-                    {[0, 1].map((g) => (
-                      <div key={g} className="flex shrink-0 gap-8 pr-8" aria-hidden={g === 1}>
-                        {Array.from({ length: 6 }).map((_, i) => (
-                          <span key={i}>{marquee}</span>
-                        ))}
-                      </div>
-                    ))}
-                  </div>
+              <div className="absolute -top-8 -left-8 h-32 w-32 rounded-full bg-butter animate-float" />
+              <div className="absolute -bottom-10 -right-10 h-40 w-40 rounded-full bg-mint animate-float" style={{ animationDelay: "1.5s" }} />
+              <div className="absolute top-1/2 right-8 h-16 w-16 rounded-full bg-lavender animate-float" style={{ animationDelay: "0.8s" }} />
+              <div className="absolute bottom-0 left-0 right-0 overflow-hidden bg-cream py-2">
+                <div className="flex animate-marquee-hero font-display font-bold text-plum whitespace-nowrap">
+                  {[0, 1].map((g) => (
+                    <div key={g} className="flex shrink-0 gap-8 pr-8" aria-hidden={g === 1}>
+                      {Array.from({ length: 6 }).map((_, i) => (
+                        <span key={i}>{marquee}</span>
+                      ))}
+                    </div>
+                  ))}
                 </div>
-              </>
-            )}
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </section>
   );
