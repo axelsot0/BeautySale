@@ -79,28 +79,70 @@ export type Database = {
       }
       admins: {
         Row: {
+          active: boolean
           created_at: string
           created_by: string | null
           email: string
           full_name: string | null
           id: string
+          role: string
+          tenant_id: number | null
           user_id: string | null
         }
         Insert: {
+          active?: boolean
           created_at?: string
           created_by?: string | null
           email: string
           full_name?: string | null
           id?: string
+          role?: string
+          tenant_id?: number | null
           user_id?: string | null
         }
         Update: {
+          active?: boolean
           created_at?: string
           created_by?: string | null
           email?: string
           full_name?: string | null
           id?: string
+          role?: string
+          tenant_id?: number | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      tenants: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string | null
+          id: number
+          name: string
+          owner_id: string | null
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: number
+          name: string
+          owner_id?: string | null
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: number
+          name?: string
+          owner_id?: string | null
+          slug?: string
+          updated_at?: string
         }
         Relationships: []
       }
