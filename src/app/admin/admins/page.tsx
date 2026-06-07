@@ -2,7 +2,7 @@ import { Plus, Trash2, Crown } from "lucide-react";
 import { redirect } from "next/navigation";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getAdminUser } from "@/lib/auth";
-import { getAdminMembership, canManageAdmins } from "@/lib/tenant-context";
+import { getAdminMembership, getAdminTenantId, canManageAdmins } from "@/lib/tenant-context";
 import { deleteAdmin } from "./actions";
 import { ResetPasswordButton } from "./ResetPasswordButton";
 
@@ -15,13 +15,14 @@ export default async function AdminsPage() {
 
   const isDev = membership.role === "developer";
   const supabase = createServiceClient();
+  const tenantId = await getAdminTenantId();
 
-  // Scope to the caller's tenant. Developer manages tenant 1 here; the platform
+  // Scope to the tenant in view (developer can switch stores). The platform
   // owner's own row and other developers are never listed/managed.
   const { data: admins } = await supabase
     .from("admins")
     .select("*")
-    .eq("tenant_id", membership.tenantId)
+    .eq("tenant_id", tenantId)
     .neq("role", "developer")
     .order("created_at", { ascending: true });
 

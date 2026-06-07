@@ -25,18 +25,27 @@ export const getStorefrontTenantId = cache(async (): Promise<number> => {
   }
 });
 
-// Tenant the currently logged-in admin belongs to (their membership row).
-// Falls back to the primary tenant during the single-store transition.
+// Cookie a developer uses to view a specific store's admin panel.
+export const ADMIN_TENANT_COOKIE = "bs_admin_tenant";
+
+// Tenant whose admin panel is currently in view. Regular admins => their own
+// tenant. Developers can override via the tenant switcher cookie.
 export async function getAdminTenantId(): Promise<number> {
-  const user = await getAdminUser();
-  if (!user?.email) return DEFAULT_TENANT_ID;
+  const m = await getAdminMembership();
+  if (!m) return DEFAULT_TENANT_ID;
+  if (m.role === "developer") {
+    const override = (await cookies()).get(ADMIN_TENANT_COOKIE)?.value;
+    const id = override ? Number(override) : NaN;
+    if (!Number.isNaN(id) && id > 0) return id;
+  }
+  return m.tenantId;
+}
+
+// All stores, for the developer tenant switcher.
+export async function listTenants(): Promise<{ id: number; name: string }[]> {
   const supabase = createServiceClient();
-  const { data } = await supabase
-    .from("admins")
-    .select("tenant_id")
-    .eq("email", user.email.toLowerCase())
-    .maybeSingle();
-  return data?.tenant_id ?? DEFAULT_TENANT_ID;
+  const { data } = await supabase.from("tenants").select("id, name").order("id", { ascending: true });
+  return data ?? [];
 }
 
 export type Membership = {

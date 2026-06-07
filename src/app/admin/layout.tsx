@@ -1,5 +1,5 @@
 import { getAdminUser } from "@/lib/auth";
-import { getAdminMembership } from "@/lib/tenant-context";
+import { getAdminMembership, getAdminTenantId, listTenants } from "@/lib/tenant-context";
 import { AdminShell } from "./_components/AdminShell";
 
 export const metadata = { title: "Admin · BeautySale" };
@@ -15,9 +15,18 @@ export default async function AdminLayout({
   if (!user) return <>{children}</>;
 
   const membership = await getAdminMembership();
+  const isDeveloper = membership?.role === "developer";
+
+  const tenants = isDeveloper ? await listTenants() : [];
+  const currentTenantId = isDeveloper ? await getAdminTenantId() : 0;
 
   return (
-    <AdminShell userEmail={user.email ?? ""} isDeveloper={membership?.role === "developer"}>
+    <AdminShell
+      userEmail={user.email ?? ""}
+      isDeveloper={isDeveloper}
+      tenants={tenants}
+      currentTenantId={currentTenantId}
+    >
       {children}
     </AdminShell>
   );

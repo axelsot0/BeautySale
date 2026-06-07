@@ -20,7 +20,10 @@ import {
   X,
 } from "lucide-react";
 import { logout } from "../login/actions";
+import { switchTenant } from "./tenant-switch";
 import { cn } from "@/lib/utils";
+
+type TenantOption = { id: number; name: string };
 
 const NAV = [
   { label: "Dashboard",  href: "/admin",            icon: LayoutDashboard },
@@ -39,10 +42,14 @@ const NAV = [
 export function AdminShell({
   userEmail,
   isDeveloper = false,
+  tenants = [],
+  currentTenantId = 0,
   children,
 }: {
   userEmail: string;
   isDeveloper?: boolean;
+  tenants?: TenantOption[];
+  currentTenantId?: number;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -70,6 +77,8 @@ export function AdminShell({
         pathname={pathname}
         userEmail={userEmail}
         isDeveloper={isDeveloper}
+        tenants={tenants}
+        currentTenantId={currentTenantId}
         className="hidden md:flex"
       />
 
@@ -80,6 +89,8 @@ export function AdminShell({
             pathname={pathname}
             userEmail={userEmail}
             isDeveloper={isDeveloper}
+            tenants={tenants}
+            currentTenantId={currentTenantId}
             className="absolute left-0 top-0 bottom-0 w-72"
             onClose={() => setOpen(false)}
           />
@@ -95,12 +106,16 @@ function Sidebar({
   pathname,
   userEmail,
   isDeveloper,
+  tenants = [],
+  currentTenantId = 0,
   className,
   onClose,
 }: {
   pathname: string;
   userEmail: string;
   isDeveloper?: boolean;
+  tenants?: TenantOption[];
+  currentTenantId?: number;
   className?: string;
   onClose?: () => void;
 }) {
@@ -129,6 +144,26 @@ function Sidebar({
       <span className="inline-block w-fit rounded-full bg-cream/10 px-3 py-1 text-[10px] font-bold uppercase tracking-widest mb-4">
         Panel admin
       </span>
+
+      {isDeveloper && tenants.length > 0 && (
+        <form action={switchTenant} className="mb-4">
+          <label className="block text-[10px] font-bold uppercase tracking-widest text-cream/50 mb-1">
+            Viendo tienda
+          </label>
+          <select
+            name="tenant_id"
+            defaultValue={currentTenantId}
+            onChange={(e) => e.currentTarget.form?.requestSubmit()}
+            className="w-full rounded-xl bg-cream/10 border border-cream/15 px-3 py-2 text-sm text-cream outline-none focus:border-pink"
+          >
+            {tenants.map((t) => (
+              <option key={t.id} value={t.id} className="text-plum">
+                {t.name}
+              </option>
+            ))}
+          </select>
+        </form>
+      )}
 
       <nav className="flex flex-col gap-1">
         {NAV.map(({ label, href, icon: Icon }) => {
