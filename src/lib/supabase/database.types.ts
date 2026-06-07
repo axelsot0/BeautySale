@@ -296,6 +296,9 @@ export type Database = {
           id: number
           logo_url: string | null
           message_when_off: string
+          paypal_client_id: string | null
+          paypal_mode: string
+          paypal_secret: string | null
           site_name: string | null
           social_links: Json | null
           theme: Json | null
@@ -309,6 +312,9 @@ export type Database = {
           id?: number
           logo_url?: string | null
           message_when_off?: string
+          paypal_client_id?: string | null
+          paypal_mode?: string
+          paypal_secret?: string | null
           site_name?: string | null
           social_links?: Json | null
           theme?: Json | null
@@ -322,6 +328,9 @@ export type Database = {
           id?: number
           logo_url?: string | null
           message_when_off?: string
+          paypal_client_id?: string | null
+          paypal_mode?: string
+          paypal_secret?: string | null
           site_name?: string | null
           social_links?: Json | null
           theme?: Json | null

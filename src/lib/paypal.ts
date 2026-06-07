@@ -3,24 +3,25 @@
  * Docs: https://developer.paypal.com/docs/api/orders/v2/
  */
 
-const BASE =
-  process.env.PAYPAL_MODE === "live"
-    ? "https://api-m.paypal.com"
-    : "https://api-m.sandbox.paypal.com";
+import { getPayPalConfig } from "@/lib/data/paypal-config";
+
+function baseUrl(mode: "sandbox" | "live"): string {
+  return mode === "live" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
+}
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 
-async function getAccessToken(): Promise<string> {
-  const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
-  const secret = process.env.PAYPAL_CLIENT_SECRET;
+async function getAuth(): Promise<{ token: string; base: string }> {
+  const { clientId, secret, mode } = await getPayPalConfig();
 
   if (!clientId || !secret) {
-    throw new Error("PayPal credentials not configured (PAYPAL_CLIENT_ID / PAYPAL_CLIENT_SECRET)");
+    throw new Error("PayPal no está configurado. Ingresá las credenciales en Ajustes.");
   }
 
+  const base = baseUrl(mode);
   const credentials = Buffer.from(`${clientId}:${secret}`).toString("base64");
 
-  const res = await fetch(`${BASE}/v1/oauth2/token`, {
+  const res = await fetch(`${base}/v1/oauth2/token`, {
     method: "POST",
     headers: {
       Authorization: `Basic ${credentials}`,
@@ -36,7 +37,7 @@ async function getAccessToken(): Promise<string> {
   }
 
   const data = await res.json();
-  return data.access_token as string;
+  return { token: data.access_token as string, base };
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -66,7 +67,7 @@ export interface PayPalOrderResult {
 export async function createPayPalOrder(
   input: CreatePayPalOrderInput,
 ): Promise<PayPalOrderResult> {
-  const token = await getAccessToken();
+  const { token, base: BASE } = await getAuth();
   const currency = input.currency ?? "USD";
   const total = input.subtotal.toFixed(2);
 
@@ -122,7 +123,7 @@ export interface PayPalCaptureResult {
 export async function capturePayPalOrder(
   paypalOrderId: string,
 ): Promise<PayPalCaptureResult> {
-  const token = await getAccessToken();
+  const { token, base: BASE } = await getAuth();
 
   const res = await fetch(`${BASE}/v2/checkout/orders/${paypalOrderId}/capture`, {
     method: "POST",
@@ -144,7 +145,7 @@ export async function capturePayPalOrder(
 // ── Verify order status (optional guard before capture) ───────────────────────
 
 export async function getPayPalOrderStatus(paypalOrderId: string): Promise<string> {
-  const token = await getAccessToken();
+  const { token, base: BASE } = await getAuth();
 
   const res = await fetch(`${BASE}/v2/checkout/orders/${paypalOrderId}`, {
     headers: { Authorization: `Bearer ${token}` },

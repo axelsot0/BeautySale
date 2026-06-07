@@ -13,6 +13,7 @@ import {
   Palette,
   Zap,
   Sparkles,
+  CreditCard,
   LogOut,
   Menu,
   X,
@@ -30,6 +31,7 @@ const NAV = [
   { label: "Flash Sale", href: "/admin/flash-sale", icon: Zap },
   { label: "Marcas",     href: "/admin/brands",     icon: Sparkles },
   { label: "Tema",       href: "/admin/theme",      icon: Palette },
+  { label: "Pagos",      href: "/admin/settings",   icon: CreditCard },
   { label: "Admins",     href: "/admin/admins",     icon: Shield },
 ];
 
