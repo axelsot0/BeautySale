@@ -1,5 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/service";
-import { getAdminTenantId } from "@/lib/tenant-context";
+import { getAdminTenantId, getAdminMembership } from "@/lib/tenant-context";
 import { parseSocialLinks } from "@/lib/social";
 import {
   DEFAULT_PALETTE,
@@ -29,6 +29,8 @@ export default async function AdminThemePage() {
   const editorialEyebrow = (data?.editorial_eyebrow as string | null)?.trim() || DEFAULT_EDITORIAL_EYEBROW;
   const editorialTitle = (data?.editorial_title as string | null)?.trim() || DEFAULT_EDITORIAL_TITLE;
   const social = parseSocialLinks(data?.social_links);
+  const membership = await getAdminMembership();
+  const isDeveloper = membership?.role === "developer";
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -47,6 +49,7 @@ export default async function AdminThemePage() {
         logoUrl={logoUrl}
         siteName={siteName}
         demoMode={demoMode}
+        isDeveloper={isDeveloper}
         editorialEyebrow={editorialEyebrow}
         editorialTitle={editorialTitle}
         social={social}

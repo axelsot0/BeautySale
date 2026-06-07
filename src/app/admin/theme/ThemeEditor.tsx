@@ -37,6 +37,7 @@ export function ThemeEditor({
   logoUrl,
   siteName,
   demoMode,
+  isDeveloper = false,
   editorialEyebrow,
   editorialTitle,
   social,
@@ -46,6 +47,7 @@ export function ThemeEditor({
   logoUrl: string | null;
   siteName: string;
   demoMode: boolean;
+  isDeveloper?: boolean;
   editorialEyebrow: string;
   editorialTitle: string;
   social: SocialLinks;
@@ -80,8 +82,8 @@ export function ThemeEditor({
 
   return (
     <div className="space-y-8">
-      {/* ===== Demo mode ===== */}
-      <DemoSection demoMode={demoMode} />
+      {/* ===== Demo mode (developer only) ===== */}
+      {isDeveloper && <DemoSection demoMode={demoMode} />}
 
       {/* ===== Site name ===== */}
       <NameSection siteName={siteName} />

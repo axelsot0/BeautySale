@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getAdminUser } from "@/lib/auth";
-import { getAdminTenantId } from "@/lib/tenant-context";
+import { getAdminTenantId, getAdminMembership } from "@/lib/tenant-context";
 import { uploadImage, deleteImageByUrl } from "@/lib/storage";
 import { parsePalette, type Palette } from "@/lib/theme";
 import { SOCIAL_NETWORKS, type SocialLinks } from "@/lib/social";
@@ -108,6 +108,8 @@ export async function saveSiteName(_prev: ThemeState, formData: FormData): Promi
 // Toggle demo mode (sample data fallback on the storefront).
 export async function saveDemoMode(_prev: ThemeState, formData: FormData): Promise<ThemeState> {
   const tenantId = await ensureAdmin();
+  const m = await getAdminMembership();
+  if (m?.role !== "developer") return { error: "Solo el developer puede cambiar el modo demo" };
   const enabled = String(formData.get("demo_mode")) === "true";
   const supabase = createServiceClient();
   const { error } = await supabase
