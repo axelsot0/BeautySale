@@ -386,6 +386,39 @@ export type Database = {
         }
         Relationships: []
       }
+      sections: {
+        Row: {
+          active: boolean
+          config: Json
+          created_at: string
+          id: string
+          position: number
+          tenant_id: number
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          config?: Json
+          created_at?: string
+          id?: string
+          position?: number
+          tenant_id: number
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          config?: Json
+          created_at?: string
+          id?: string
+          position?: number
+          tenant_id?: number
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       platform_settings: {
         Row: {
           active: boolean

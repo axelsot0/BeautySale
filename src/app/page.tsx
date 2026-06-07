@@ -19,11 +19,32 @@ import {
   getEditorialHeading,
 } from "@/lib/data/queries";
 import { getStorefrontTenantId } from "@/lib/tenant-context";
+import { getSections } from "@/lib/data/sections-query";
+import { SectionStack } from "@/components/storefront/SectionStack";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const t = await getStorefrontTenantId();
+
+  // If the store has a custom section stack, render it (Hero on top, footer at
+  // the bottom). Otherwise fall back to the built-in default layout.
+  const sections = await getSections(t);
+  if (sections.length > 0) {
+    const [news, heroBanners] = await Promise.all([getNews(t), getBanners("hero", t)]);
+    const heroBanner = heroBanners[0] ?? null;
+    return (
+      <>
+        <NewsBar items={news} />
+        <SiteHeader />
+        <main className="flex-1">
+          {heroBanner && <Hero banner={heroBanner} />}
+          <SectionStack sections={sections} tenantId={t} />
+        </main>
+        <Footer />
+      </>
+    );
+  }
   const [news, categories, heroBanners, mosaicBanners, featured, cuidado, ojos, flashSale, brands] =
     await Promise.all([
       getNews(t),
