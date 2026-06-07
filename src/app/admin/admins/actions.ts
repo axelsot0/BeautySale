@@ -5,7 +5,25 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getAdminUser } from "@/lib/auth";
-import { getAdminTenantId } from "@/lib/tenant-context";
+import { getAdminTenantId, getAdminMembership, canManageAdmins, type Membership } from "@/lib/tenant-context";
+
+// Requires the caller to be a superadmin or developer.
+async function requireManager(): Promise<Membership> {
+  const m = await getAdminMembership();
+  if (!m || !canManageAdmins(m.role)) throw new Error("forbidden");
+  return m;
+}
+
+// Whether `caller` may delete/reset a target with the given role + tenant.
+function canActOnTarget(
+  caller: Membership,
+  targetRole: string,
+  targetTenantId: number | null,
+): boolean {
+  if (caller.role === "developer") return true;
+  if (targetRole === "developer" || targetRole === "superadmin") return false;
+  return targetTenantId === caller.tenantId;
+}
 
 const schema = z.object({
   email: z.string().email().toLowerCase(),
@@ -26,6 +44,7 @@ export async function createAdmin(
   formData: FormData,
 ): Promise<AdminFormState> {
   const me = await ensureAdmin();
+  await requireManager();
 
   const parsed = schema.safeParse({
     email: formData.get("email"),
@@ -95,6 +114,7 @@ export async function createAdmin(
 
 export async function deleteAdmin(formData: FormData) {
   const me = await ensureAdmin();
+  const caller = await requireManager();
   const id = String(formData.get("id") ?? "");
   if (!id) return;
 
@@ -103,7 +123,7 @@ export async function deleteAdmin(formData: FormData) {
   // Get the admin row + auth user_id
   const { data: row } = await supabase
     .from("admins")
-    .select("user_id, email")
+    .select("user_id, email, role, tenant_id")
     .eq("id", id)
     .single();
   if (!row) return;
@@ -111,6 +131,11 @@ export async function deleteAdmin(formData: FormData) {
   // Block self-deletion
   if (row.user_id === me.id) {
     throw new Error("No podés eliminarte a vos mismo");
+  }
+
+  // An admin/superadmin cannot remove the owner or cross-tenant accounts.
+  if (!canActOnTarget(caller, row.role, row.tenant_id)) {
+    throw new Error("No autorizado");
   }
 
   // Remove from admins table (auth.users keeps existing)
@@ -140,7 +165,7 @@ export async function resetAdminPassword(
   _prev: ResetState,
   formData: FormData,
 ): Promise<ResetState> {
-  await ensureAdmin();
+  const caller = await requireManager();
   const id = String(formData.get("id") ?? "");
   const newPassword = String(formData.get("password") ?? "");
   if (!id || newPassword.length < 6) return { error: "Mínimo 6 caracteres" };
@@ -148,10 +173,14 @@ export async function resetAdminPassword(
   const supabase = createServiceClient();
   const { data: row } = await supabase
     .from("admins")
-    .select("user_id, email")
+    .select("user_id, email, role, tenant_id")
     .eq("id", id)
     .single();
   if (!row) return { error: "Admin no encontrado" };
+
+  if (!canActOnTarget(caller, row.role, row.tenant_id)) {
+    return { error: "No autorizado" };
+  }
 
   // Resolve auth user_id (legacy rows may have it null — look up by email + backfill)
   let userId = row.user_id;

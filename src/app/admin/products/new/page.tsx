@@ -1,11 +1,14 @@
 import { createServiceClient } from "@/lib/supabase/service";
+import { getAdminTenantId } from "@/lib/tenant-context";
 import { ProductForm } from "../ProductForm";
 
 export default async function NewProductPage() {
   const supabase = createServiceClient();
+  const tenantId = await getAdminTenantId();
   const { data: categories } = await supabase
     .from("categories")
     .select("*")
+    .eq("tenant_id", tenantId)
     .order("position", { ascending: true });
 
   return (

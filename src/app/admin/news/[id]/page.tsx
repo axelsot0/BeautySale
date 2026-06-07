@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createServiceClient } from "@/lib/supabase/service";
+import { getAdminTenantId } from "@/lib/tenant-context";
 import { NewsForm } from "../NewsForm";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +12,13 @@ export default async function EditNewsPage({
 }) {
   const { id } = await params;
   const supabase = createServiceClient();
-  const { data } = await supabase.from("news").select("*").eq("id", id).single();
+  const tenantId = await getAdminTenantId();
+  const { data } = await supabase
+    .from("news")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .eq("id", id)
+    .single();
 
   if (!data) notFound();
 

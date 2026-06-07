@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { ArrowLeft, MapPin, Mail, User, Calendar, Package } from "lucide-react";
 import { createServiceClient } from "@/lib/supabase/service";
+import { getAdminTenantId } from "@/lib/tenant-context";
 import { formatPrice } from "@/lib/utils";
 import { updateOrderStatus } from "../actions";
 
@@ -22,7 +23,13 @@ export default async function OrderDetailPage({
 }) {
   const { id } = await params;
   const supabase = createServiceClient();
-  const { data: order } = await supabase.from("orders").select("*").eq("id", id).single();
+  const tenantId = await getAdminTenantId();
+  const { data: order } = await supabase
+    .from("orders")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .eq("id", id)
+    .single();
   if (!order) notFound();
 
   const items = (Array.isArray(order.items) ? order.items : []) as {

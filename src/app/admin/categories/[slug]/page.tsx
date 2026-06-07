@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createServiceClient } from "@/lib/supabase/service";
+import { getAdminTenantId } from "@/lib/tenant-context";
 import { CategoryForm } from "../CategoryForm";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +12,13 @@ export default async function EditCategoryPage({
 }) {
   const { slug } = await params;
   const supabase = createServiceClient();
-  const { data } = await supabase.from("categories").select("*").eq("slug", slug).single();
+  const tenantId = await getAdminTenantId();
+  const { data } = await supabase
+    .from("categories")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .eq("slug", slug)
+    .single();
 
   if (!data) notFound();
 

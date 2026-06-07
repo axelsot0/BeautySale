@@ -1,5 +1,6 @@
 import { Pencil, Plus, Star, Tag } from "lucide-react";
 import { createServiceClient } from "@/lib/supabase/service";
+import { getAdminTenantId } from "@/lib/tenant-context";
 import { DeleteButton } from "../_components/DeleteButton";
 import { deleteProduct, toggleProductFeatured, toggleProductOnSale } from "./actions";
 import { formatPrice } from "@/lib/utils";
@@ -8,9 +9,11 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminProductsPage() {
   const supabase = createServiceClient();
+  const tenantId = await getAdminTenantId();
   const { data: products } = await supabase
     .from("products")
     .select("*, category:categories(name, color)")
+    .eq("tenant_id", tenantId)
     .order("created_at", { ascending: false });
 
   return (

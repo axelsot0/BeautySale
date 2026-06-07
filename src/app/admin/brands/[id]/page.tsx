@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createServiceClient } from "@/lib/supabase/service";
+import { getAdminTenantId } from "@/lib/tenant-context";
 import { BrandForm } from "../BrandForm";
 
 export const dynamic = "force-dynamic";
@@ -7,7 +8,13 @@ export const dynamic = "force-dynamic";
 export default async function EditBrandPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = createServiceClient();
-  const { data } = await supabase.from("brands").select("*").eq("id", id).single();
+  const tenantId = await getAdminTenantId();
+  const { data } = await supabase
+    .from("brands")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .eq("id", id)
+    .single();
 
   if (!data) notFound();
 

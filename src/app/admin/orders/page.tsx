@@ -1,5 +1,6 @@
 import { Eye, ShoppingBag } from "lucide-react";
 import { createServiceClient } from "@/lib/supabase/service";
+import { getAdminTenantId } from "@/lib/tenant-context";
 import { formatPrice } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -24,8 +25,13 @@ export default async function AdminOrdersPage({
 }) {
   const { status } = await searchParams;
   const supabase = createServiceClient();
+  const tenantId = await getAdminTenantId();
 
-  let q = supabase.from("orders").select("*").order("created_at", { ascending: false });
+  let q = supabase
+    .from("orders")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .order("created_at", { ascending: false });
   if (status) q = q.eq("status", status);
 
   const { data: orders } = await q;

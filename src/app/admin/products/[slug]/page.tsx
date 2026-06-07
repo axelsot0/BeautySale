@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createServiceClient } from "@/lib/supabase/service";
+import { getAdminTenantId } from "@/lib/tenant-context";
 import { ProductForm } from "../ProductForm";
 
 export const dynamic = "force-dynamic";
@@ -11,10 +12,11 @@ export default async function EditProductPage({
 }) {
   const { slug } = await params;
   const supabase = createServiceClient();
+  const tenantId = await getAdminTenantId();
 
   const [{ data: product }, { data: categories }] = await Promise.all([
-    supabase.from("products").select("*").eq("slug", slug).single(),
-    supabase.from("categories").select("*").order("position", { ascending: true }),
+    supabase.from("products").select("*").eq("tenant_id", tenantId).eq("slug", slug).single(),
+    supabase.from("categories").select("*").eq("tenant_id", tenantId).order("position", { ascending: true }),
   ]);
 
   if (!product) notFound();

@@ -1,5 +1,6 @@
 import { Plus, Pencil } from "lucide-react";
 import { createServiceClient } from "@/lib/supabase/service";
+import { getAdminTenantId } from "@/lib/tenant-context";
 import { DeleteButton } from "../_components/DeleteButton";
 import { deleteCategory } from "./actions";
 
@@ -7,9 +8,11 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminCategoriesPage() {
   const supabase = createServiceClient();
+  const tenantId = await getAdminTenantId();
   const { data: categories } = await supabase
     .from("categories")
     .select("*")
+    .eq("tenant_id", tenantId)
     .order("position", { ascending: true });
 
   return (

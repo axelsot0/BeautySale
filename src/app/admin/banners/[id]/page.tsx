@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createServiceClient } from "@/lib/supabase/service";
+import { getAdminTenantId } from "@/lib/tenant-context";
 import { BannerForm } from "../BannerForm";
 import { HeroForm } from "../HeroForm";
 
@@ -35,7 +36,13 @@ export default async function EditBannerPage({
 }) {
   const { id } = await params;
   const supabase = createServiceClient();
-  const { data } = await supabase.from("banners").select("*").eq("id", id).single();
+  const tenantId = await getAdminTenantId();
+  const { data } = await supabase
+    .from("banners")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .eq("id", id)
+    .single();
 
   if (!data) notFound();
 

@@ -1,4 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/service";
+import { getAdminTenantId } from "@/lib/tenant-context";
 import { HeroForm } from "../HeroForm";
 
 export const dynamic = "force-dynamic";
@@ -28,9 +29,11 @@ function Tabs({ active }: { active: "hero" | "banners" }) {
 
 export default async function AdminHeroPage() {
   const supabase = createServiceClient();
+  const tenantId = await getAdminTenantId();
   const { data: hero } = await supabase
     .from("banners")
     .select("*")
+    .eq("tenant_id", tenantId)
     .eq("slot", "hero")
     .limit(1)
     .maybeSingle();

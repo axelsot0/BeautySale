@@ -1,5 +1,6 @@
 import { Pencil, Plus } from "lucide-react";
 import { createServiceClient } from "@/lib/supabase/service";
+import { getAdminTenantId } from "@/lib/tenant-context";
 import { DeleteButton } from "../_components/DeleteButton";
 import { deleteBanner, toggleBannerActive } from "./actions";
 
@@ -35,9 +36,11 @@ function Tabs({ active }: { active: "hero" | "banners" }) {
 
 export default async function AdminBannersPage() {
   const supabase = createServiceClient();
+  const tenantId = await getAdminTenantId();
   const { data: banners } = await supabase
     .from("banners")
     .select("*")
+    .eq("tenant_id", tenantId)
     .neq("slot", "hero")
     .order("position", { ascending: true });
 

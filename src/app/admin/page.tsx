@@ -1,5 +1,6 @@
 import { Megaphone, Package, Tag, Image as ImageIcon, ShoppingBag, DollarSign, TrendingUp } from "lucide-react";
 import { createServiceClient } from "@/lib/supabase/service";
+import { getAdminTenantId } from "@/lib/tenant-context";
 import { formatPrice } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +24,7 @@ interface OrderItem {
 
 async function getStats() {
   const supabase = createServiceClient();
+  const t = await getAdminTenantId();
   const [
     products,
     categories,
@@ -35,16 +37,16 @@ async function getStats() {
     recentOrders,
     allOrdersForAggregation,
   ] = await Promise.all([
-    supabase.from("products").select("id", { count: "exact", head: true }),
-    supabase.from("categories").select("id", { count: "exact", head: true }),
-    supabase.from("banners").select("id", { count: "exact", head: true }),
-    supabase.from("news").select("id", { count: "exact", head: true }),
-    supabase.from("products").select("id", { count: "exact", head: true }).eq("featured", true),
-    supabase.from("products").select("id", { count: "exact", head: true }).eq("on_sale", true),
-    supabase.from("orders").select("total").eq("status", "paid"),
-    supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "pending"),
-    supabase.from("orders").select("*").order("created_at", { ascending: false }).limit(5),
-    supabase.from("orders").select("items").in("status", ["paid", "shipped", "delivered"]),
+    supabase.from("products").select("id", { count: "exact", head: true }).eq("tenant_id", t),
+    supabase.from("categories").select("id", { count: "exact", head: true }).eq("tenant_id", t),
+    supabase.from("banners").select("id", { count: "exact", head: true }).eq("tenant_id", t),
+    supabase.from("news").select("id", { count: "exact", head: true }).eq("tenant_id", t),
+    supabase.from("products").select("id", { count: "exact", head: true }).eq("tenant_id", t).eq("featured", true),
+    supabase.from("products").select("id", { count: "exact", head: true }).eq("tenant_id", t).eq("on_sale", true),
+    supabase.from("orders").select("total").eq("tenant_id", t).eq("status", "paid"),
+    supabase.from("orders").select("id", { count: "exact", head: true }).eq("tenant_id", t).eq("status", "pending"),
+    supabase.from("orders").select("*").eq("tenant_id", t).order("created_at", { ascending: false }).limit(5),
+    supabase.from("orders").select("items").eq("tenant_id", t).in("status", ["paid", "shipped", "delivered"]),
   ]);
 
   const revenue = (paidOrders.data ?? []).reduce(
