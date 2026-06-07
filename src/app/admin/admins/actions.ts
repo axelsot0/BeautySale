@@ -106,10 +106,17 @@ export async function deleteAdmin(formData: FormData) {
   // Remove from admins table (auth.users keeps existing)
   await supabase.from("admins").delete().eq("id", id);
 
+  // Resolve user_id (legacy rows may have it null)
+  let userId = row.user_id;
+  if (!userId && row.email) {
+    const { data: list } = await supabase.auth.admin.listUsers();
+    userId = list.users.find((u) => u.email?.toLowerCase() === row.email.toLowerCase())?.id ?? null;
+  }
+
   // Revoke admin in JWT metadata so proxy gate stops letting them through
-  if (row.user_id) {
-    const { data: u } = await supabase.auth.admin.getUserById(row.user_id);
-    await supabase.auth.admin.updateUserById(row.user_id, {
+  if (userId) {
+    const { data: u } = await supabase.auth.admin.getUserById(userId);
+    await supabase.auth.admin.updateUserById(userId, {
       user_metadata: { ...(u?.user?.user_metadata ?? {}), is_admin: false, role: undefined },
     });
   }
@@ -131,12 +138,22 @@ export async function resetAdminPassword(
   const supabase = createServiceClient();
   const { data: row } = await supabase
     .from("admins")
-    .select("user_id")
+    .select("user_id, email")
     .eq("id", id)
     .single();
-  if (!row?.user_id) return { error: "Admin no encontrado" };
+  if (!row) return { error: "Admin no encontrado" };
 
-  const { error } = await supabase.auth.admin.updateUserById(row.user_id, {
+  // Resolve auth user_id (legacy rows may have it null — look up by email + backfill)
+  let userId = row.user_id;
+  if (!userId) {
+    const { data: list } = await supabase.auth.admin.listUsers();
+    const match = list.users.find((u) => u.email?.toLowerCase() === row.email.toLowerCase());
+    if (!match) return { error: "No existe un usuario de auth con ese email" };
+    userId = match.id;
+    await supabase.from("admins").update({ user_id: userId }).eq("id", id);
+  }
+
+  const { error } = await supabase.auth.admin.updateUserById(userId, {
     password: newPassword,
   });
   if (error) return { error: error.message };
