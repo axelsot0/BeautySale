@@ -1,5 +1,7 @@
 import { Mail } from "lucide-react";
 import { getSocialLinks } from "@/lib/data/queries";
+import { getActiveTheme } from "@/lib/data/theme-query";
+import { getStorefrontTenantId } from "@/lib/tenant-context";
 import { SOCIAL_NETWORKS, socialHref, type SocialKey } from "@/lib/social";
 import { NewsletterForm } from "./NewsletterForm";
 
@@ -73,7 +75,8 @@ const FOOTER_NAV = {
 };
 
 export async function Footer() {
-  const social = await getSocialLinks();
+  const t = await getStorefrontTenantId();
+  const [social, { siteName }] = await Promise.all([getSocialLinks(t), getActiveTheme(t)]);
   const activeSocials = SOCIAL_NETWORKS.filter((n) => social[n.key].active && social[n.key].url.trim());
 
   return (
@@ -99,7 +102,7 @@ export async function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
           <div className="col-span-2 md:col-span-1 space-y-4">
             <a href="/" className="font-display text-3xl block">
-              Beauty<span className="text-pink italic">Sale</span>
+              {siteName}
             </a>
             <p className="text-sm text-cream/70 max-w-xs">
               Productos de belleza, cuidado personal y accesorios. Hechos con cariño.
@@ -166,7 +169,7 @@ export async function Footer() {
             ))}
           </div>
           <p className="text-xs text-cream/50">
-            © {new Date().getFullYear()} BeautySale. Hecho con 💖.
+            © {new Date().getFullYear()} {siteName}. Hecho con 💖.
           </p>
         </div>
       </div>

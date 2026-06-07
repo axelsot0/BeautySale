@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useMemo, useRef, useState, useTransition } from "react";
-import { Check, Upload, Trash2, Loader2, RotateCcw, Palette as PaletteIcon, Type, FlaskConical, LayoutGrid, Share2 } from "lucide-react";
+import { Check, Upload, Trash2, Loader2, RotateCcw, Palette as PaletteIcon, FlaskConical } from "lucide-react";
 import {
   PRESETS,
   CORE_TOKENS,
@@ -17,13 +17,9 @@ import {
   resetTheme,
   saveLogo,
   removeLogo,
-  saveSiteName,
   saveDemoMode,
-  saveEditorialHeading,
-  saveSocialLinks,
   type ThemeState,
 } from "./actions";
-import { SOCIAL_NETWORKS, type SocialLinks } from "@/lib/social";
 
 const INITIAL: ThemeState = {};
 
@@ -35,22 +31,14 @@ export function ThemeEditor({
   current,
   isDefault,
   logoUrl,
-  siteName,
   demoMode,
   isDeveloper = false,
-  editorialEyebrow,
-  editorialTitle,
-  social,
 }: {
   current: Palette;
   isDefault: boolean;
   logoUrl: string | null;
-  siteName: string;
   demoMode: boolean;
   isDeveloper?: boolean;
-  editorialEyebrow: string;
-  editorialTitle: string;
-  social: SocialLinks;
 }) {
   const [cores, setCores] = useState<Record<CoreToken, string>>(coresFromPalette(current));
   const [presetId, setPresetId] = useState<string | null>(null);
@@ -84,15 +72,6 @@ export function ThemeEditor({
     <div className="space-y-8">
       {/* ===== Demo mode (developer only) ===== */}
       {isDeveloper && <DemoSection demoMode={demoMode} />}
-
-      {/* ===== Site name ===== */}
-      <NameSection siteName={siteName} />
-
-      {/* ===== Editorial heading ===== */}
-      <EditorialSection eyebrow={editorialEyebrow} title={editorialTitle} />
-
-      {/* ===== Social links ===== */}
-      <SocialSection social={social} />
 
       {/* ===== Presets ===== */}
       <section className="space-y-3">
@@ -277,141 +256,6 @@ function DemoSection({ demoMode }: { demoMode: boolean }) {
       </div>
       {saveState.error && <p className="text-sm text-pink font-medium">{saveState.error}</p>}
       {saveState.ok && <p className="text-sm text-mint font-medium">Modo demo actualizado.</p>}
-    </section>
-  );
-}
-
-function SocialSection({ social }: { social: SocialLinks }) {
-  const [saveState, saveAction, saving] = useActionState(saveSocialLinks, INITIAL);
-
-  return (
-    <section className="space-y-3">
-      <h2 className="font-display text-2xl flex items-center gap-2">
-        <Share2 className="h-5 w-5 text-pink" /> Redes sociales (footer)
-      </h2>
-      <p className="text-sm text-plum-soft">
-        Activá las redes que uses y poné su link. Solo las activas (con URL) aparecen en el footer.
-      </p>
-      <form action={saveAction} className="space-y-3">
-        {SOCIAL_NETWORKS.map((n) => (
-          <div key={n.key} className="flex flex-wrap items-center gap-3 rounded-2xl border border-plum/10 p-3">
-            <label className="flex items-center gap-2 w-28 shrink-0">
-              <input
-                type="checkbox"
-                name={`${n.key}_active`}
-                defaultChecked={social[n.key].active}
-                className="h-5 w-5 accent-pink"
-              />
-              <span className="font-bold text-plum text-sm">{n.label}</span>
-            </label>
-            <input
-              type="text"
-              name={`${n.key}_url`}
-              defaultValue={social[n.key].url}
-              placeholder={n.placeholder}
-              maxLength={300}
-              className="field-input flex-1 min-w-[200px]"
-            />
-          </div>
-        ))}
-        <button
-          type="submit"
-          disabled={saving}
-          className="rounded-full bg-pink px-6 py-3 font-bold text-cream transition hover:shadow-glow-pink disabled:opacity-60 inline-flex items-center gap-2"
-        >
-          {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-          {saving ? "Guardando…" : "Guardar redes"}
-        </button>
-      </form>
-      {saveState.error && <p className="text-sm text-pink font-medium">{saveState.error}</p>}
-      {saveState.ok && <p className="text-sm text-mint font-medium">Redes actualizadas.</p>}
-    </section>
-  );
-}
-
-function EditorialSection({ eyebrow, title }: { eyebrow: string; title: string }) {
-  const [saveState, saveAction, saving] = useActionState(saveEditorialHeading, INITIAL);
-
-  return (
-    <section className="space-y-3">
-      <h2 className="font-display text-2xl flex items-center gap-2">
-        <LayoutGrid className="h-5 w-5 text-pink" /> Encabezado de editoriales
-      </h2>
-      <p className="text-sm text-plum-soft">
-        Títulos de la sección de editoriales (mosaico) en la portada.
-      </p>
-      <form action={saveAction} className="space-y-3">
-        <div>
-          <span className="field-label">Eyebrow (línea pequeña)</span>
-          <input
-            name="editorial_eyebrow"
-            defaultValue={eyebrow}
-            maxLength={60}
-            className="field-input"
-            placeholder="🌸 editoriales"
-          />
-        </div>
-        <div>
-          <span className="field-label">Título</span>
-          <input
-            name="editorial_title"
-            defaultValue={title}
-            maxLength={80}
-            className="field-input"
-            placeholder="Inspiración del mes ✨"
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={saving}
-          className="rounded-full bg-pink px-6 py-3 font-bold text-cream transition hover:shadow-glow-pink disabled:opacity-60 inline-flex items-center gap-2"
-        >
-          {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-          {saving ? "Guardando…" : "Guardar encabezado"}
-        </button>
-      </form>
-      {saveState.error && <p className="text-sm text-pink font-medium">{saveState.error}</p>}
-      {saveState.ok && <p className="text-sm text-mint font-medium">Encabezado actualizado.</p>}
-    </section>
-  );
-}
-
-function NameSection({ siteName }: { siteName: string }) {
-  const [name, setName] = useState(siteName);
-  const [saveState, saveAction, saving] = useActionState(saveSiteName, INITIAL);
-
-  return (
-    <section className="space-y-3">
-      <h2 className="font-display text-2xl flex items-center gap-2">
-        <Type className="h-5 w-5 text-pink" /> Nombre de la plataforma
-      </h2>
-      <p className="text-sm text-plum-soft">
-        Aparece en el encabezado (si no hay logo) y en el título de la pestaña. Vacío = nombre por
-        defecto.
-      </p>
-      <form action={saveAction} className="flex flex-wrap items-end gap-3">
-        <div className="flex-1 min-w-[240px]">
-          <input
-            type="text"
-            name="site_name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            maxLength={40}
-            placeholder="BeautySale"
-            className="w-full rounded-2xl border border-plum/10 bg-white px-4 py-3 outline-none focus:border-pink font-display text-xl"
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={saving}
-          className="rounded-full bg-pink px-6 py-3 font-bold text-cream transition hover:shadow-glow-pink disabled:opacity-60 inline-flex items-center gap-2"
-        >
-          {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-          {saving ? "Guardando…" : "Guardar nombre"}
-        </button>
-      </form>
-      {saveState.error && <p className="text-sm text-pink font-medium">{saveState.error}</p>}
-      {saveState.ok && <p className="text-sm text-mint font-medium">Nombre actualizado.</p>}
     </section>
   );
 }
