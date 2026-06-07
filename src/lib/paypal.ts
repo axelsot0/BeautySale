@@ -51,6 +51,7 @@ export interface PayPalOrderItem {
 export interface CreatePayPalOrderInput {
   items: PayPalOrderItem[];
   subtotal: number;       // numeric, we'll format to 2dp string
+  discount?: number;      // amount subtracted from item_total
   currency?: string;
   returnUrl: string;
   cancelUrl: string;
@@ -69,7 +70,16 @@ export async function createPayPalOrder(
 ): Promise<PayPalOrderResult> {
   const { token, base: BASE } = await getAuth();
   const currency = input.currency ?? "USD";
-  const total = input.subtotal.toFixed(2);
+  const itemTotal = input.subtotal.toFixed(2);
+  const discount = (input.discount ?? 0).toFixed(2);
+  const total = (input.subtotal - (input.discount ?? 0)).toFixed(2);
+
+  const breakdown: Record<string, { currency_code: string; value: string }> = {
+    item_total: { currency_code: currency, value: itemTotal },
+  };
+  if ((input.discount ?? 0) > 0) {
+    breakdown.discount = { currency_code: currency, value: discount };
+  }
 
   const body = {
     intent: "CAPTURE",
@@ -78,9 +88,7 @@ export async function createPayPalOrder(
         amount: {
           currency_code: currency,
           value: total,
-          breakdown: {
-            item_total: { currency_code: currency, value: total },
-          },
+          breakdown,
         },
         items: input.items,
       },

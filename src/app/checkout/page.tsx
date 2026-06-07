@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useCartStore } from "@/lib/cart/store";
 import { formatPrice } from "@/lib/utils";
-import { Loader2, ShoppingBag } from "lucide-react";
+import { Loader2, ShoppingBag, Check, Tag } from "lucide-react";
 
 interface FormData {
   customer_name: string;
@@ -31,8 +31,54 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [code, setCode] = useState("");
+  const [applied, setApplied] = useState<{ code: string; percent: number } | null>(null);
+  const [codeError, setCodeError] = useState<string | null>(null);
+  const [validating, setValidating] = useState(false);
+
   function update(field: keyof FormData, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  const sub = subtotal();
+  const discount = applied ? parseFloat((sub * (applied.percent / 100)).toFixed(2)) : 0;
+  const total = parseFloat((sub - discount).toFixed(2));
+
+  const CODE_ERRORS: Record<string, string> = {
+    not_found: "Código inválido",
+    used: "Este código ya fue usado",
+    invalid: "Código inválido",
+  };
+
+  async function applyCode() {
+    const c = code.trim().toUpperCase();
+    if (!c) return;
+    setValidating(true);
+    setCodeError(null);
+    try {
+      const res = await fetch("/api/discount/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: c }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        setApplied({ code: c, percent: data.percent });
+      } else {
+        setApplied(null);
+        setCodeError(CODE_ERRORS[data.error] ?? "Código inválido");
+      }
+    } catch {
+      setCodeError("Error al validar. Intentá de nuevo.");
+    } finally {
+      setValidating(false);
+    }
+  }
+
+  function removeCode() {
+    setApplied(null);
+    setCode("");
+    setCodeError(null);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -62,6 +108,7 @@ export default function CheckoutPage() {
             quantity: i.quantity,
             image: i.image,
           })),
+          discount_code: applied?.code,
         }),
       });
 
@@ -237,18 +284,76 @@ export default function CheckoutPage() {
               ))}
             </ul>
 
+            {/* Discount code */}
+            <div className="border-t border-plum/10 pt-4">
+              {applied ? (
+                <div className="flex items-center justify-between rounded-2xl bg-mint/15 border border-mint/30 px-3 py-2.5">
+                  <span className="flex items-center gap-2 text-sm font-medium text-plum">
+                    <Check className="h-4 w-4 text-mint" />
+                    {applied.code} ({applied.percent}% off)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={removeCode}
+                    className="text-xs font-semibold text-plum-soft hover:text-pink"
+                  >
+                    Quitar
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  <span className="field-label flex items-center gap-1.5">
+                    <Tag className="h-3.5 w-3.5" /> Código de descuento
+                  </span>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={code}
+                      onChange={(e) => {
+                        setCode(e.target.value);
+                        setCodeError(null);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          applyCode();
+                        }
+                      }}
+                      placeholder="GLOW-XXXXXX"
+                      className="field-input flex-1 uppercase"
+                    />
+                    <button
+                      type="button"
+                      onClick={applyCode}
+                      disabled={validating || !code.trim()}
+                      className="rounded-full bg-plum px-4 text-sm font-semibold text-cream hover:opacity-90 disabled:opacity-50 transition"
+                    >
+                      {validating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Aplicar"}
+                    </button>
+                  </div>
+                  {codeError && <p className="text-xs text-pink font-medium">{codeError}</p>}
+                </div>
+              )}
+            </div>
+
             <div className="border-t border-plum/10 pt-4 space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-plum-soft">Subtotal</span>
-                <span className="font-semibold">{formatPrice(subtotal())}</span>
+                <span className="font-semibold">{formatPrice(sub)}</span>
               </div>
+              {discount > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-plum-soft">Descuento ({applied?.percent}%)</span>
+                  <span className="font-semibold text-mint">-{formatPrice(discount)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-sm">
                 <span className="text-plum-soft">Envío</span>
                 <span className="font-semibold text-mint">A calcular</span>
               </div>
               <div className="flex justify-between text-lg font-display pt-2 border-t border-plum/10">
                 <span>Total</span>
-                <span>{formatPrice(subtotal())}</span>
+                <span>{formatPrice(total)}</span>
               </div>
             </div>
 

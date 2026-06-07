@@ -250,6 +250,8 @@ export type Database = {
           created_at: string
           customer_email: string
           customer_name: string
+          discount_amount: number
+          discount_code: string | null
           id: string
           items: Json
           paypal_order_id: string | null
@@ -263,6 +265,8 @@ export type Database = {
           created_at?: string
           customer_email: string
           customer_name: string
+          discount_amount?: number
+          discount_code?: string | null
           id?: string
           items: Json
           paypal_order_id?: string | null
@@ -276,6 +280,8 @@ export type Database = {
           created_at?: string
           customer_email?: string
           customer_name?: string
+          discount_amount?: number
+          discount_code?: string | null
           id?: string
           items?: Json
           paypal_order_id?: string | null

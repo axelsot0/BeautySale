@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createServiceClient } from "@/lib/supabase/service";
 import { createPayPalOrder } from "@/lib/paypal";
+import { checkDiscountCode } from "@/lib/discount";
 
 // ── Validation ────────────────────────────────────────────────────────────────
 
@@ -24,6 +25,7 @@ const bodySchema = z.object({
     country: z.string().min(2).max(80),
   }),
   items: z.array(itemSchema).min(1).max(50),
+  discount_code: z.string().max(40).optional(),
 });
 
 // ── POST /api/checkout ────────────────────────────────────────────────────────
@@ -45,7 +47,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { customer_name, customer_email, shipping_address, items } = parsed.data;
+  const { customer_name, customer_email, shipping_address, items, discount_code } = parsed.data;
 
   // 2. Calculate totals server-side (never trust client prices for final amount)
   //    We re-fetch prices from DB to prevent tampering.
@@ -109,6 +111,18 @@ export async function POST(req: NextRequest) {
       .toFixed(2),
   );
 
+  // 2b. Apply discount code server-side (never trust client-computed totals)
+  let discountAmount = 0;
+  let appliedCode: string | null = null;
+  if (discount_code) {
+    const check = await checkDiscountCode(discount_code);
+    if (check.valid) {
+      discountAmount = parseFloat((subtotal * (check.percent / 100)).toFixed(2));
+      appliedCode = discount_code.trim().toUpperCase();
+    }
+  }
+  const total = parseFloat((subtotal - discountAmount).toFixed(2));
+
   // 3. Create Supabase order (status: pending)
   const orderItems = items.map((item) => {
     const db = priceMap.get(item.id)!;
@@ -129,7 +143,9 @@ export async function POST(req: NextRequest) {
       shipping_address,
       items: orderItems,
       subtotal,
-      total: subtotal, // no shipping fee for now
+      total, // subtotal minus discount; no shipping fee for now
+      discount_code: appliedCode,
+      discount_amount: discountAmount,
       status: "pending",
     })
     .select("id")
@@ -153,6 +169,7 @@ export async function POST(req: NextRequest) {
         };
       }),
       subtotal,
+      discount: discountAmount,
       returnUrl: `${origin}/checkout/success?orderId=${order.id}`,
       cancelUrl: `${origin}/checkout/cancel?orderId=${order.id}`,
     });

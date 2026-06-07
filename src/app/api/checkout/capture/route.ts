@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createServiceClient } from "@/lib/supabase/service";
 import { capturePayPalOrder } from "@/lib/paypal";
 import { sendOrderConfirmation } from "@/lib/email";
+import { consumeDiscountCode } from "@/lib/discount";
 
 const bodySchema = z.object({
   paypalOrderId: z.string().min(1),
@@ -68,6 +69,13 @@ export async function POST(req: NextRequest) {
 
     // Mark paid
     await supabase.from("orders").update({ status: "paid" }).eq("id", orderId);
+
+    // Consume discount code (one-time use)
+    if (order.discount_code) {
+      await consumeDiscountCode(order.discount_code).catch((err) =>
+        console.error("[discount] consume failed:", err),
+      );
+    }
 
     // Send confirmation email (non-blocking — don't fail the response if email errors)
     const items = Array.isArray(order.items) ? order.items as {
