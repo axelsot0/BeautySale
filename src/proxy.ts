@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
+import { TENANT_COOKIE } from "@/lib/tenant-cookie";
 
 const MAINTENANCE_PATH = "/maintenance";
 const ADMIN_LOGIN_PATH = "/admin/login";
@@ -23,6 +24,32 @@ export async function proxy(request: NextRequest) {
   }
 
   const { response, supabase, user } = await updateSession(request);
+
+  // Storefront tenant routing: /t/<slug>/... resolves the store, sets a sticky
+  // cookie, and rewrites to the normal storefront path.
+  const tenantMatch = pathname.match(/^\/t\/([^/]+)(\/.*)?$/);
+  if (tenantMatch) {
+    const slug = tenantMatch[1].toLowerCase();
+    const rest = tenantMatch[2] || "/";
+    const { data: tenant } = await supabase
+      .from("tenants")
+      .select("slug, active")
+      .eq("slug", slug)
+      .maybeSingle();
+
+    const url = request.nextUrl.clone();
+    if (!tenant || tenant.active === false) {
+      url.pathname = "/store-unavailable";
+      return NextResponse.rewrite(url);
+    }
+    url.pathname = rest;
+    // Set the cookie on the request too, so the rewritten render resolves the
+    // tenant on this first hit (not just subsequent navigations).
+    request.cookies.set(TENANT_COOKIE, slug);
+    const res = NextResponse.rewrite(url, { request });
+    res.cookies.set(TENANT_COOKIE, slug, { path: "/", sameSite: "lax" });
+    return res;
+  }
 
   const appMeta = (user?.app_metadata ?? {}) as { role?: string; active?: boolean };
 

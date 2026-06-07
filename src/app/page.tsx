@@ -18,24 +18,26 @@ import {
   getBrands,
   getEditorialHeading,
 } from "@/lib/data/queries";
+import { getStorefrontTenantId } from "@/lib/tenant-context";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export default async function Home() {
+  const t = await getStorefrontTenantId();
   const [news, categories, heroBanners, mosaicBanners, featured, cuidado, ojos, flashSale, brands] =
     await Promise.all([
-      getNews(),
-      getCategories(),
-      getBanners("hero"),
-      getBanners("mosaic"),
-      getFeaturedProducts(8),
-      getProductsByCategory("cuidado-personal", 6),
-      getProductsByCategory("ojos", 6),
-      getActiveFlashSale(),
-      getBrands(),
+      getNews(t),
+      getCategories(t),
+      getBanners("hero", t),
+      getBanners("mosaic", t),
+      getFeaturedProducts(8, t),
+      getProductsByCategory("cuidado-personal", 6, t),
+      getProductsByCategory("ojos", 6, t),
+      getActiveFlashSale(t),
+      getBrands(t),
     ]);
   const heroBanner = heroBanners[0] ?? null;
-  const editorial = await getEditorialHeading();
+  const editorial = await getEditorialHeading(t);
 
   const cuidadoCat = categories.find((c) => c.slug === "cuidado-personal");
   const ojosCat = categories.find((c) => c.slug === "ojos");

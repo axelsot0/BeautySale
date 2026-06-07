@@ -3,6 +3,7 @@ import { Bricolage_Grotesque, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { CartDrawer } from "@/components/storefront/CartDrawer";
 import { getActiveTheme } from "@/lib/data/theme-query";
+import { getStorefrontTenantId } from "@/lib/tenant-context";
 import { paletteToCssVars } from "@/lib/theme";
 
 const bricolage = Bricolage_Grotesque({
@@ -20,7 +21,7 @@ const dmSans = DM_Sans({
 });
 
 export async function generateMetadata(): Promise<Metadata> {
-  const { siteName } = await getActiveTheme();
+  const { siteName } = await getActiveTheme(await getStorefrontTenantId());
   return {
     title: `${siteName} — Belleza, cuidado personal y accesorios`,
     description: "Productos de belleza, cuidado personal y accesorios. Bold, colorful, hecho para vos.",
@@ -32,7 +33,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const { palette } = await getActiveTheme();
+  const { palette } = await getActiveTheme(await getStorefrontTenantId());
   const themeVars = paletteToCssVars(palette);
   return (
     <html

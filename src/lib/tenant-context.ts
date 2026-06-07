@@ -1,7 +1,29 @@
 import "server-only";
+import { cache } from "react";
+import { cookies } from "next/headers";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getAdminUser } from "@/lib/auth";
 import { DEFAULT_TENANT_ID } from "@/lib/tenant";
+import { TENANT_COOKIE } from "@/lib/tenant-cookie";
+
+// Resolves the storefront tenant for the current request from the tenant cookie.
+// Falls back to the primary store. Cached per request.
+export const getStorefrontTenantId = cache(async (): Promise<number> => {
+  try {
+    const slug = (await cookies()).get(TENANT_COOKIE)?.value;
+    if (!slug) return DEFAULT_TENANT_ID;
+    const supabase = createServiceClient();
+    const { data } = await supabase
+      .from("tenants")
+      .select("id, active")
+      .eq("slug", slug.toLowerCase())
+      .maybeSingle();
+    if (!data || data.active === false) return DEFAULT_TENANT_ID;
+    return data.id;
+  } catch {
+    return DEFAULT_TENANT_ID;
+  }
+});
 
 // Tenant the currently logged-in admin belongs to (their membership row).
 // Falls back to the primary tenant during the single-store transition.

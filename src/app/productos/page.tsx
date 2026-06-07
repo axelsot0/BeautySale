@@ -1,29 +1,31 @@
 import { getCategories } from "@/lib/data/queries";
 import { getDemoMode } from "@/lib/data/demo";
+import { getStorefrontTenantId } from "@/lib/tenant-context";
 import { createServiceClient } from "@/lib/supabase/service";
 import { mockProducts } from "@/lib/data/mock";
 import { SiteHeader } from "@/components/storefront/SiteHeader";
 import { Footer } from "@/components/storefront/Footer";
 import { ProductSearch } from "./ProductSearch";
 
-// ISR: recache every 60s — search/filter are client-side so data can be slightly stale
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
-async function getAllProducts() {
+async function getAllProducts(tenantId: number) {
   const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("products")
     .select("*")
+    .eq("tenant_id", tenantId)
     .order("created_at", { ascending: false });
 
-  if (error || !data || data.length === 0) return (await getDemoMode()) ? mockProducts : [];
+  if (error || !data || data.length === 0) return (await getDemoMode(tenantId)) ? mockProducts : [];
   return data;
 }
 
 export default async function ProductosPage() {
+  const t = await getStorefrontTenantId();
   const [products, categories] = await Promise.all([
-    getAllProducts(),
-    getCategories(),
+    getAllProducts(t),
+    getCategories(t),
   ]);
 
   return (

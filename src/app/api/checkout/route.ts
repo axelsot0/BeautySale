@@ -3,7 +3,7 @@ import { z } from "zod";
 import { createServiceClient } from "@/lib/supabase/service";
 import { createPayPalOrder } from "@/lib/paypal";
 import { checkDiscountCode } from "@/lib/discount";
-import { DEFAULT_TENANT_ID } from "@/lib/tenant";
+import { getStorefrontTenantId } from "@/lib/tenant-context";
 
 // ── Validation ────────────────────────────────────────────────────────────────
 
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const tenantId = DEFAULT_TENANT_ID;
+  const tenantId = await getStorefrontTenantId();
   const { data: dbProducts, error: dbErr } = await supabase
     .from("products")
     .select("id, title, price, discount_percent, stock")

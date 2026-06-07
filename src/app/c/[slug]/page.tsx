@@ -1,11 +1,12 @@
 import { notFound } from "next/navigation";
 import { ChevronRight, PackageOpen } from "lucide-react";
 import { getCategoryBySlug, getProductsByCategory, getCategories } from "@/lib/data/queries";
+import { getStorefrontTenantId } from "@/lib/tenant-context";
 import { SiteHeader } from "@/components/storefront/SiteHeader";
 import { Footer } from "@/components/storefront/Footer";
 import { ProductCard } from "@/components/storefront/ProductCard";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export default async function CategoryPage({
   params,
@@ -13,11 +14,12 @@ export default async function CategoryPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  const t = await getStorefrontTenantId();
 
   const [category, products, allCategories] = await Promise.all([
-    getCategoryBySlug(slug),
-    getProductsByCategory(slug),
-    getCategories(),
+    getCategoryBySlug(slug, t),
+    getProductsByCategory(slug, 48, t),
+    getCategories(t),
   ]);
 
   if (!category) notFound();

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createServiceClient } from "@/lib/supabase/service";
 import { sendNewsletterWelcome } from "@/lib/email";
-import { DEFAULT_TENANT_ID } from "@/lib/tenant";
+import { getStorefrontTenantId } from "@/lib/tenant-context";
 
 const schema = z.object({
   email: z.string().email(),
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
   const { email, fp } = parsed.data;
   const normalizedEmail = email.toLowerCase().trim();
   const ip = getClientIp(req);
-  const tenantId = DEFAULT_TENANT_ID;
+  const tenantId = await getStorefrontTenantId();
   const supabase = createServiceClient();
 
   // 1. Email already subscribed (to this store)?

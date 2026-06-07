@@ -1,15 +1,17 @@
 import { Zap, PackageOpen } from "lucide-react";
 import { getOnSaleProducts, getCategories } from "@/lib/data/queries";
+import { getStorefrontTenantId } from "@/lib/tenant-context";
 import { SiteHeader } from "@/components/storefront/SiteHeader";
 import { Footer } from "@/components/storefront/Footer";
 import { ProductSearch } from "../productos/ProductSearch";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export default async function OfertasPage() {
+  const t = await getStorefrontTenantId();
   const [products, categories] = await Promise.all([
-    getOnSaleProducts(),
-    getCategories(),
+    getOnSaleProducts(48, t),
+    getCategories(t),
   ]);
 
   // Promedio descuento (sólo si hay items)

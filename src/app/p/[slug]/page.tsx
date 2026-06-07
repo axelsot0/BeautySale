@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { Star, ChevronRight } from "lucide-react";
 import { getProductBySlug, getRelatedProducts } from "@/lib/data/queries";
+import { getStorefrontTenantId } from "@/lib/tenant-context";
 import { applyDiscount, formatPrice } from "@/lib/utils";
 import { ProductGallery } from "./ProductGallery";
 import { AddToCart } from "./AddToCart";
@@ -8,7 +9,7 @@ import { ProductCard } from "@/components/storefront/ProductCard";
 import { SiteHeader } from "@/components/storefront/SiteHeader";
 import { Footer } from "@/components/storefront/Footer";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export default async function ProductPage({
   params,
@@ -16,10 +17,11 @@ export default async function ProductPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const product = await getProductBySlug(slug);
+  const t = await getStorefrontTenantId();
+  const product = await getProductBySlug(slug, t);
   if (!product) notFound();
 
-  const related = await getRelatedProducts(product.category_id, slug, 4);
+  const related = await getRelatedProducts(product.category_id, slug, 4, t);
   const finalPrice = applyDiscount(product.price, product.discount_percent);
   const hasDiscount = product.discount_percent > 0;
 
