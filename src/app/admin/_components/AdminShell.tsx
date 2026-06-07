@@ -14,6 +14,7 @@ import {
   Zap,
   Sparkles,
   CreditCard,
+  Code2,
   LogOut,
   Menu,
   X,
@@ -37,9 +38,11 @@ const NAV = [
 
 export function AdminShell({
   userEmail,
+  isDeveloper = false,
   children,
 }: {
   userEmail: string;
+  isDeveloper?: boolean;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -66,6 +69,7 @@ export function AdminShell({
       <Sidebar
         pathname={pathname}
         userEmail={userEmail}
+        isDeveloper={isDeveloper}
         className="hidden md:flex"
       />
 
@@ -75,6 +79,7 @@ export function AdminShell({
           <Sidebar
             pathname={pathname}
             userEmail={userEmail}
+            isDeveloper={isDeveloper}
             className="absolute left-0 top-0 bottom-0 w-72"
             onClose={() => setOpen(false)}
           />
@@ -89,11 +94,13 @@ export function AdminShell({
 function Sidebar({
   pathname,
   userEmail,
+  isDeveloper,
   className,
   onClose,
 }: {
   pathname: string;
   userEmail: string;
+  isDeveloper?: boolean;
   className?: string;
   onClose?: () => void;
 }) {
@@ -143,6 +150,16 @@ function Sidebar({
             </a>
           );
         })}
+
+        {isDeveloper && (
+          <a
+            href="/dev"
+            className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium transition mt-2 bg-cream/10 text-butter hover:bg-cream/20"
+          >
+            <Code2 className="h-4 w-4" />
+            Developer
+          </a>
+        )}
       </nav>
 
       <div className="mt-auto pt-6 border-t border-cream/10 space-y-3">
