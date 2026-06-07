@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getAdminUser } from "@/lib/auth";
+import { getAdminTenantId } from "@/lib/tenant-context";
 
 const schema = z.object({
   id: z.string().uuid().optional(),
@@ -15,13 +16,14 @@ const schema = z.object({
 
 export type NewsFormState = { error?: string };
 
-async function ensureAdmin() {
+async function ensureAdmin(): Promise<number> {
   const user = await getAdminUser();
   if (!user) throw new Error("unauthorized");
+  return getAdminTenantId();
 }
 
 export async function saveNews(_prev: NewsFormState, formData: FormData): Promise<NewsFormState> {
-  await ensureAdmin();
+  const tenantId = await ensureAdmin();
 
   const parsed = schema.safeParse({
     id: formData.get("id") || undefined,
@@ -38,7 +40,7 @@ export async function saveNews(_prev: NewsFormState, formData: FormData): Promis
     const { error } = await supabase.from("news").update(payload).eq("id", id);
     if (error) return { error: error.message };
   } else {
-    const { error } = await supabase.from("news").insert(payload);
+    const { error } = await supabase.from("news").insert({ ...payload, tenant_id: tenantId });
     if (error) return { error: error.message };
   }
 

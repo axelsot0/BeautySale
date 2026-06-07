@@ -1,4 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/service";
+import { getAdminTenantId } from "@/lib/tenant-context";
 import { parseSocialLinks } from "@/lib/social";
 import {
   DEFAULT_PALETTE,
@@ -13,10 +14,11 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminThemePage() {
   const supabase = createServiceClient();
+  const tenantId = await getAdminTenantId();
   const { data } = await supabase
-    .from("platform_settings")
+    .from("tenants")
     .select("theme, logo_url, site_name, demo_mode, editorial_eyebrow, editorial_title, social_links")
-    .eq("id", 1)
+    .eq("id", tenantId)
     .single();
 
   const current = parsePalette(data?.theme) ?? DEFAULT_PALETTE;

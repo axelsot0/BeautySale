@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getAdminUser } from "@/lib/auth";
+import { getAdminTenantId } from "@/lib/tenant-context";
 import { slugify } from "@/lib/utils";
 import { uploadImage, deleteImageByUrl } from "@/lib/storage";
 
@@ -19,16 +20,17 @@ const schema = z.object({
 
 export type CategoryFormState = { error?: string; fieldErrors?: Record<string, string> };
 
-async function ensureAdmin() {
+async function ensureAdmin(): Promise<number> {
   const user = await getAdminUser();
   if (!user) throw new Error("unauthorized");
+  return getAdminTenantId();
 }
 
 export async function saveCategory(
   _prev: CategoryFormState,
   formData: FormData,
 ): Promise<CategoryFormState> {
-  await ensureAdmin();
+  const tenantId = await ensureAdmin();
 
   const parsed = schema.safeParse({
     id: formData.get("id") || undefined,
@@ -82,7 +84,7 @@ export async function saveCategory(
     const { error } = await supabase.from("categories").update(payload).eq("id", id);
     if (error) return { error: error.message };
   } else {
-    const { error } = await supabase.from("categories").insert(payload);
+    const { error } = await supabase.from("categories").insert({ ...payload, tenant_id: tenantId });
     if (error) return { error: error.message };
   }
 

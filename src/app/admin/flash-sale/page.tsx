@@ -1,4 +1,5 @@
 import { createServiceClient } from "@/lib/supabase/service";
+import { getAdminTenantId } from "@/lib/tenant-context";
 import { mockFlashSale } from "@/lib/data/mock";
 import { FlashSaleForm } from "./FlashSaleForm";
 
@@ -6,7 +7,12 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminFlashSalePage() {
   const supabase = createServiceClient();
-  const { data } = await supabase.from("flash_sale").select("*").eq("id", 1).maybeSingle();
+  const tenantId = await getAdminTenantId();
+  const { data } = await supabase
+    .from("flash_sale")
+    .select("*")
+    .eq("tenant_id", tenantId)
+    .maybeSingle();
 
   // No row yet => prefill with demo defaults so the admin starts from the current look.
   const current = data ?? { ...mockFlashSale, active: false };

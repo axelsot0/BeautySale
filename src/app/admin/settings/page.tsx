@@ -1,14 +1,16 @@
 import { createServiceClient } from "@/lib/supabase/service";
+import { getAdminTenantId } from "@/lib/tenant-context";
 import { PayPalForm } from "./PayPalForm";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminSettingsPage() {
   const supabase = createServiceClient();
+  const tenantId = await getAdminTenantId();
   const { data } = await supabase
-    .from("platform_settings")
+    .from("tenants")
     .select("paypal_client_id, paypal_secret, paypal_mode")
-    .eq("id", 1)
+    .eq("id", tenantId)
     .single();
 
   return (

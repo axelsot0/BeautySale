@@ -3,13 +3,15 @@
 import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getAdminUser } from "@/lib/auth";
+import { getAdminTenantId } from "@/lib/tenant-context";
 import { uploadImage, deleteImageByUrl } from "@/lib/storage";
 import { parsePalette, type Palette } from "@/lib/theme";
 import { SOCIAL_NETWORKS, type SocialLinks } from "@/lib/social";
 
-async function ensureAdmin() {
+async function ensureAdmin(): Promise<number> {
   const u = await getAdminUser();
   if (!u) throw new Error("unauthorized");
+  return getAdminTenantId();
 }
 
 function revalidateAll(id: string) {
@@ -23,7 +25,7 @@ export type ThemeState = { ok?: boolean; error?: string };
 
 // Save a palette (preset or custom). Validates all 11 hex tokens server-side.
 export async function saveTheme(_prev: ThemeState, formData: FormData): Promise<ThemeState> {
-  await ensureAdmin();
+  const tenantId = await ensureAdmin();
 
   let raw: unknown;
   try {
@@ -37,9 +39,9 @@ export async function saveTheme(_prev: ThemeState, formData: FormData): Promise<
 
   const supabase = createServiceClient();
   const { error } = await supabase
-    .from("platform_settings")
+    .from("tenants")
     .update({ theme: palette })
-    .eq("id", 1);
+    .eq("id", tenantId);
   if (error) return { error: error.message };
 
   revalidateAll("save");
@@ -48,7 +50,7 @@ export async function saveTheme(_prev: ThemeState, formData: FormData): Promise<
 
 // Reset to the built-in default palette (theme = null).
 export async function resetTheme(): Promise<ThemeState> {
-  await ensureAdmin();
+  const tenantId = await ensureAdmin();
   const supabase = createServiceClient();
   const { error } = await supabase.from("platform_settings").update({ theme: null }).eq("id", 1);
   if (error) return { error: error.message };
@@ -58,7 +60,7 @@ export async function resetTheme(): Promise<ThemeState> {
 
 // Save a (already background-removed) logo PNG. Replaces the previous one.
 export async function saveLogo(_prev: ThemeState, formData: FormData): Promise<ThemeState> {
-  await ensureAdmin();
+  const tenantId = await ensureAdmin();
 
   const file = formData.get("logo");
   if (!(file instanceof File) || file.size === 0) return { error: "Sin archivo" };
@@ -72,9 +74,9 @@ export async function saveLogo(_prev: ThemeState, formData: FormData): Promise<T
 
   const supabase = createServiceClient();
   const { data: prev } = await supabase
-    .from("platform_settings")
+    .from("tenants")
     .select("logo_url")
-    .eq("id", 1)
+    .eq("id", tenantId)
     .single();
 
   const { error } = await supabase.from("platform_settings").update({ logo_url: url }).eq("id", 1);
@@ -88,15 +90,15 @@ export async function saveLogo(_prev: ThemeState, formData: FormData): Promise<T
 
 // Save the platform/site name. Empty => reset to default (null).
 export async function saveSiteName(_prev: ThemeState, formData: FormData): Promise<ThemeState> {
-  await ensureAdmin();
+  const tenantId = await ensureAdmin();
   const raw = String(formData.get("site_name") ?? "").trim();
   if (raw.length > 40) return { error: "Máximo 40 caracteres" };
 
   const supabase = createServiceClient();
   const { error } = await supabase
-    .from("platform_settings")
+    .from("tenants")
     .update({ site_name: raw || null })
-    .eq("id", 1);
+    .eq("id", tenantId);
   if (error) return { error: error.message };
 
   revalidateAll("site-name");
@@ -105,13 +107,13 @@ export async function saveSiteName(_prev: ThemeState, formData: FormData): Promi
 
 // Toggle demo mode (sample data fallback on the storefront).
 export async function saveDemoMode(_prev: ThemeState, formData: FormData): Promise<ThemeState> {
-  await ensureAdmin();
+  const tenantId = await ensureAdmin();
   const enabled = String(formData.get("demo_mode")) === "true";
   const supabase = createServiceClient();
   const { error } = await supabase
-    .from("platform_settings")
+    .from("tenants")
     .update({ demo_mode: enabled })
-    .eq("id", 1);
+    .eq("id", tenantId);
   if (error) return { error: error.message };
   revalidateAll("demo");
   return { ok: true };
@@ -122,16 +124,16 @@ export async function saveEditorialHeading(
   _prev: ThemeState,
   formData: FormData,
 ): Promise<ThemeState> {
-  await ensureAdmin();
+  const tenantId = await ensureAdmin();
   const eyebrow = String(formData.get("editorial_eyebrow") ?? "").trim();
   const title = String(formData.get("editorial_title") ?? "").trim();
   if (eyebrow.length > 60 || title.length > 80) return { error: "Texto demasiado largo" };
 
   const supabase = createServiceClient();
   const { error } = await supabase
-    .from("platform_settings")
+    .from("tenants")
     .update({ editorial_eyebrow: eyebrow || null, editorial_title: title || null })
-    .eq("id", 1);
+    .eq("id", tenantId);
   if (error) return { error: error.message };
 
   revalidateAll("editorial");
@@ -140,7 +142,7 @@ export async function saveEditorialHeading(
 
 // Save footer social links (active + url per network).
 export async function saveSocialLinks(_prev: ThemeState, formData: FormData): Promise<ThemeState> {
-  await ensureAdmin();
+  const tenantId = await ensureAdmin();
 
   const links = {} as SocialLinks;
   for (const n of SOCIAL_NETWORKS) {
@@ -159,12 +161,12 @@ export async function saveSocialLinks(_prev: ThemeState, formData: FormData): Pr
 }
 
 export async function removeLogo(): Promise<ThemeState> {
-  await ensureAdmin();
+  const tenantId = await ensureAdmin();
   const supabase = createServiceClient();
   const { data: prev } = await supabase
-    .from("platform_settings")
+    .from("tenants")
     .select("logo_url")
-    .eq("id", 1)
+    .eq("id", tenantId)
     .single();
   const { error } = await supabase.from("platform_settings").update({ logo_url: null }).eq("id", 1);
   if (error) return { error: error.message };

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createServiceClient } from "@/lib/supabase/service";
 import { createPayPalOrder } from "@/lib/paypal";
 import { checkDiscountCode } from "@/lib/discount";
+import { DEFAULT_TENANT_ID } from "@/lib/tenant";
 
 // ── Validation ────────────────────────────────────────────────────────────────
 
@@ -64,9 +65,11 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const tenantId = DEFAULT_TENANT_ID;
   const { data: dbProducts, error: dbErr } = await supabase
     .from("products")
     .select("id, title, price, discount_percent, stock")
+    .eq("tenant_id", tenantId)
     .in("id", productIds);
 
   if (dbErr) {
@@ -115,7 +118,7 @@ export async function POST(req: NextRequest) {
   let discountAmount = 0;
   let appliedCode: string | null = null;
   if (discount_code) {
-    const check = await checkDiscountCode(discount_code);
+    const check = await checkDiscountCode(discount_code, tenantId);
     if (check.valid) {
       discountAmount = parseFloat((subtotal * (check.percent / 100)).toFixed(2));
       appliedCode = discount_code.trim().toUpperCase();
@@ -146,6 +149,7 @@ export async function POST(req: NextRequest) {
       total, // subtotal minus discount; no shipping fee for now
       discount_code: appliedCode,
       discount_amount: discountAmount,
+      tenant_id: tenantId,
       status: "pending",
     })
     .select("id")

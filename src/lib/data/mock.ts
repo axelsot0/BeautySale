@@ -4,12 +4,12 @@ import { slugify } from "@/lib/utils";
 const now = new Date().toISOString();
 
 export const mockCategories: Category[] = [
-  { id: "c1", name: "Cuidado personal", slug: "cuidado-personal", color: "#7DD3C0", icon: "💆‍♀️", image_url: null, position: 0, created_at: now },
-  { id: "c2", name: "Ojos",             slug: "ojos",             color: "#B5A3E8", icon: "👁️",   image_url: null, position: 1, created_at: now },
-  { id: "c3", name: "Labios",           slug: "labios",           color: "#FF4D8B", icon: "💋",   image_url: null, position: 2, created_at: now },
-  { id: "c4", name: "Rostro",           slug: "rostro",           color: "#FFE066", icon: "✨",   image_url: null, position: 3, created_at: now },
-  { id: "c5", name: "Cabello",          slug: "cabello",          color: "#E5DEFF", icon: "💁‍♀️", image_url: null, position: 4, created_at: now },
-  { id: "c6", name: "Accesorios",       slug: "accesorios",       color: "#CFEFE6", icon: "💖",   image_url: null, position: 5, created_at: now },
+  { id: "c1", name: "Cuidado personal", slug: "cuidado-personal", color: "#7DD3C0", icon: "💆‍♀️", image_url: null, position: 0, tenant_id: 1, created_at: now },
+  { id: "c2", name: "Ojos",             slug: "ojos",             color: "#B5A3E8", icon: "👁️",   image_url: null, position: 1, tenant_id: 1, created_at: now },
+  { id: "c3", name: "Labios",           slug: "labios",           color: "#FF4D8B", icon: "💋",   image_url: null, position: 2, tenant_id: 1, created_at: now },
+  { id: "c4", name: "Rostro",           slug: "rostro",           color: "#FFE066", icon: "✨",   image_url: null, position: 3, tenant_id: 1, created_at: now },
+  { id: "c5", name: "Cabello",          slug: "cabello",          color: "#E5DEFF", icon: "💁‍♀️", image_url: null, position: 4, tenant_id: 1, created_at: now },
+  { id: "c6", name: "Accesorios",       slug: "accesorios",       color: "#CFEFE6", icon: "💖",   image_url: null, position: 5, tenant_id: 1, created_at: now },
 ];
 
 const product = (
@@ -30,6 +30,7 @@ const product = (
   featured: opts.featured ?? false,
   on_sale: opts.on_sale ?? false,
   images: [],
+  tenant_id: 1,
   created_at: now,
   updated_at: now,
 });
@@ -63,6 +64,7 @@ const heroExtra = {
   cta2_label: "Ver categorías",
   cta2_link: "#categorias",
   marquee_text: "NUEVO ★",
+  tenant_id: 1,
 };
 const noHeroExtra = {
   eyebrow_text: null,
@@ -70,6 +72,7 @@ const noHeroExtra = {
   cta2_label: null,
   cta2_link: null,
   marquee_text: null,
+  tenant_id: 1,
 };
 
 export const mockBanners: Banner[] = [
@@ -86,6 +89,7 @@ const brand = (name: string, font_style: string, position: number): Brand => ({
   font_style,
   position,
   active: true,
+  tenant_id: 1,
   created_at: now,
 });
 
@@ -102,6 +106,7 @@ export const mockBrands: Brand[] = [
 
 export const mockFlashSale: FlashSale = {
   id: 1,
+  tenant_id: 1,
   active: true,
   title: "Flash sale 24hs",
   discount_label: "-40% OFF",
@@ -112,9 +117,9 @@ export const mockFlashSale: FlashSale = {
 };
 
 export const mockNews: News[] = [
-  { id: "n1", text: "✨ Envío gratis en compras +$50",          active: true, position: 0, created_at: now },
-  { id: "n2", text: "💖 10% off en tu primera compra",          active: true, position: 1, created_at: now },
-  { id: "n3", text: "💸 Hasta 12 cuotas sin interés",            active: true, position: 2, created_at: now },
-  { id: "n4", text: "🎁 Regalo sorpresa en compras +$100",      active: true, position: 3, created_at: now },
-  { id: "n5", text: "💌 Suscribite y obtené 10% extra",          active: true, position: 4, created_at: now },
+  { id: "n1", text: "✨ Envío gratis en compras +$50",          active: true, position: 0, tenant_id: 1, created_at: now },
+  { id: "n2", text: "💖 10% off en tu primera compra",          active: true, position: 1, tenant_id: 1, created_at: now },
+  { id: "n3", text: "💸 Hasta 12 cuotas sin interés",            active: true, position: 2, tenant_id: 1, created_at: now },
+  { id: "n4", text: "🎁 Regalo sorpresa en compras +$100",      active: true, position: 3, tenant_id: 1, created_at: now },
+  { id: "n5", text: "💌 Suscribite y obtené 10% extra",          active: true, position: 4, tenant_id: 1, created_at: now },
 ];

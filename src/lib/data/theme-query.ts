@@ -1,18 +1,21 @@
 import "server-only";
 import { createServiceClient } from "@/lib/supabase/service";
 import { DEFAULT_PALETTE, DEFAULT_SITE_NAME, parsePalette, type Palette } from "@/lib/theme";
+import { DEFAULT_TENANT_ID } from "@/lib/tenant";
 
 export type ActiveTheme = { palette: Palette; logoUrl: string | null; siteName: string };
 
-// Reads the active theme from platform_settings. Always returns a usable theme:
+// Reads the active theme from the tenant row. Always returns a usable theme:
 // on any failure or missing/invalid data, falls back to the built-in palette.
-export async function getActiveTheme(): Promise<ActiveTheme> {
+export async function getActiveTheme(
+  tenantId: number = DEFAULT_TENANT_ID,
+): Promise<ActiveTheme> {
   try {
     const supabase = createServiceClient();
     const { data, error } = await supabase
-      .from("platform_settings")
+      .from("tenants")
       .select("theme, logo_url, site_name")
-      .eq("id", 1)
+      .eq("id", tenantId)
       .single();
     if (error || !data) return { palette: DEFAULT_PALETTE, logoUrl: null, siteName: DEFAULT_SITE_NAME };
 

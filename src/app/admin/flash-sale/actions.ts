@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getAdminUser } from "@/lib/auth";
+import { getAdminTenantId } from "@/lib/tenant-context";
 
 const schema = z.object({
   active: z.coerce.boolean().default(false),
@@ -16,16 +17,17 @@ const schema = z.object({
 
 export type FlashFormState = { ok?: boolean; error?: string };
 
-async function ensureAdmin() {
+async function ensureAdmin(): Promise<number> {
   const user = await getAdminUser();
   if (!user) throw new Error("unauthorized");
+  return getAdminTenantId();
 }
 
 export async function saveFlashSale(
   _prev: FlashFormState,
   formData: FormData,
 ): Promise<FlashFormState> {
-  await ensureAdmin();
+  const tenantId = await ensureAdmin();
 
   const parsed = schema.safeParse({
     active: formData.get("active") === "on",
@@ -44,7 +46,7 @@ export async function saveFlashSale(
   const supabase = createServiceClient();
   const { error } = await supabase
     .from("flash_sale")
-    .upsert({ id: 1, ...rest, ends_at: endsAtIso }, { onConflict: "id" });
+    .upsert({ tenant_id: tenantId, ...rest, ends_at: endsAtIso }, { onConflict: "tenant_id" });
   if (error) return { error: error.message };
 
   revalidatePath("/admin/flash-sale");

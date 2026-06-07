@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getAdminUser } from "@/lib/auth";
+import { getAdminTenantId } from "@/lib/tenant-context";
 import { slugify } from "@/lib/utils";
 import { uploadImage, deleteImageByUrl } from "@/lib/storage";
 
@@ -23,16 +24,17 @@ const schema = z.object({
 
 export type ProductFormState = { error?: string; fieldErrors?: Record<string, string> };
 
-async function ensureAdmin() {
+async function ensureAdmin(): Promise<number> {
   const user = await getAdminUser();
   if (!user) throw new Error("unauthorized");
+  return getAdminTenantId();
 }
 
 export async function saveProduct(
   _prev: ProductFormState,
   formData: FormData,
 ): Promise<ProductFormState> {
-  await ensureAdmin();
+  const tenantId = await ensureAdmin();
 
   const parsed = schema.safeParse({
     id: formData.get("id") || undefined,
@@ -93,7 +95,7 @@ export async function saveProduct(
     const { error } = await supabase.from("products").update(payload).eq("id", id);
     if (error) return { error: error.message };
   } else {
-    const { error } = await supabase.from("products").insert(payload);
+    const { error } = await supabase.from("products").insert({ ...payload, tenant_id: tenantId });
     if (error) return { error: error.message };
   }
 

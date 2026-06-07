@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
 
     // Consume discount code (one-time use)
     if (order.discount_code) {
-      await consumeDiscountCode(order.discount_code).catch((err) =>
+      await consumeDiscountCode(order.discount_code, order.tenant_id ?? undefined).catch((err) =>
         console.error("[discount] consume failed:", err),
       );
     }

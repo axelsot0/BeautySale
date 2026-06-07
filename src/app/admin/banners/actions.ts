@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getAdminUser } from "@/lib/auth";
+import { getAdminTenantId } from "@/lib/tenant-context";
 import { uploadImage, deleteImageByUrl } from "@/lib/storage";
 
 const SLOTS = ["hero", "mosaic", "sale"] as const;
@@ -27,16 +28,17 @@ const schema = z.object({
 
 export type BannerFormState = { error?: string; fieldErrors?: Record<string, string> };
 
-async function ensureAdmin() {
+async function ensureAdmin(): Promise<number> {
   const user = await getAdminUser();
   if (!user) throw new Error("unauthorized");
+  return getAdminTenantId();
 }
 
 export async function saveBanner(
   _prev: BannerFormState,
   formData: FormData,
 ): Promise<BannerFormState> {
-  await ensureAdmin();
+  const tenantId = await ensureAdmin();
 
   const parsed = schema.safeParse({
     id: formData.get("id") || undefined,
@@ -106,7 +108,7 @@ export async function saveBanner(
     const { error } = await supabase.from("banners").update(payload).eq("id", id);
     if (error) return { error: error.message };
   } else {
-    const { error } = await supabase.from("banners").insert(payload);
+    const { error } = await supabase.from("banners").insert({ ...payload, tenant_id: tenantId });
     if (error) return { error: error.message };
   }
 
@@ -137,7 +139,7 @@ export async function saveHero(
   _prev: HeroFormState,
   formData: FormData,
 ): Promise<HeroFormState> {
-  await ensureAdmin();
+  const tenantId = await ensureAdmin();
 
   const parsed = heroSchema.safeParse({
     id: formData.get("id") || undefined,
@@ -203,7 +205,7 @@ export async function saveHero(
     const { error } = await supabase.from("banners").update(payload).eq("id", id);
     if (error) return { error: error.message };
   } else {
-    const { error } = await supabase.from("banners").insert(payload);
+    const { error } = await supabase.from("banners").insert({ ...payload, tenant_id: tenantId });
     if (error) return { error: error.message };
   }
 

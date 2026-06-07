@@ -23,6 +23,7 @@ export type Database = {
           logo_url: string | null
           name: string
           position: number
+          tenant_id: number | null
         }
         Insert: {
           active?: boolean
@@ -32,6 +33,7 @@ export type Database = {
           logo_url?: string | null
           name: string
           position?: number
+          tenant_id?: number | null
         }
         Update: {
           active?: boolean
@@ -41,6 +43,7 @@ export type Database = {
           logo_url?: string | null
           name?: string
           position?: number
+          tenant_id?: number | null
         }
         Relationships: []
       }
@@ -52,6 +55,7 @@ export type Database = {
           discount_label: string
           ends_at: string | null
           id: number
+          tenant_id: number | null
           title: string
           updated_at: string
         }
@@ -62,6 +66,7 @@ export type Database = {
           discount_label?: string
           ends_at?: string | null
           id?: number
+          tenant_id?: number | null
           title?: string
           updated_at?: string
         }
@@ -72,6 +77,7 @@ export type Database = {
           discount_label?: string
           ends_at?: string | null
           id?: number
+          tenant_id?: number | null
           title?: string
           updated_at?: string
         }
@@ -118,30 +124,60 @@ export type Database = {
           active: boolean
           created_at: string
           created_by: string | null
+          demo_mode: boolean
+          editorial_eyebrow: string | null
+          editorial_title: string | null
           id: number
+          logo_url: string | null
           name: string
           owner_id: string | null
+          paypal_client_id: string | null
+          paypal_mode: string
+          paypal_secret: string | null
+          site_name: string | null
           slug: string
+          social_links: Json | null
+          theme: Json | null
           updated_at: string
         }
         Insert: {
           active?: boolean
           created_at?: string
           created_by?: string | null
+          demo_mode?: boolean
+          editorial_eyebrow?: string | null
+          editorial_title?: string | null
           id?: number
+          logo_url?: string | null
           name: string
           owner_id?: string | null
+          paypal_client_id?: string | null
+          paypal_mode?: string
+          paypal_secret?: string | null
+          site_name?: string | null
           slug: string
+          social_links?: Json | null
+          theme?: Json | null
           updated_at?: string
         }
         Update: {
           active?: boolean
           created_at?: string
           created_by?: string | null
+          demo_mode?: boolean
+          editorial_eyebrow?: string | null
+          editorial_title?: string | null
           id?: number
+          logo_url?: string | null
           name?: string
           owner_id?: string | null
+          paypal_client_id?: string | null
+          paypal_mode?: string
+          paypal_secret?: string | null
+          site_name?: string | null
           slug?: string
+          social_links?: Json | null
+          theme?: Json | null
           updated_at?: string
         }
         Relationships: []
@@ -162,6 +198,7 @@ export type Database = {
           position: number
           slot: string
           subtitle: string | null
+          tenant_id: number | null
           title: string
         }
         Insert: {
@@ -179,6 +216,7 @@ export type Database = {
           position?: number
           slot?: string
           subtitle?: string | null
+          tenant_id?: number | null
           title: string
         }
         Update: {
@@ -196,6 +234,7 @@ export type Database = {
           position?: number
           slot?: string
           subtitle?: string | null
+          tenant_id?: number | null
           title?: string
         }
         Relationships: []
@@ -210,6 +249,7 @@ export type Database = {
           name: string
           position: number
           slug: string
+          tenant_id: number | null
         }
         Insert: {
           color?: string
@@ -220,6 +260,7 @@ export type Database = {
           name: string
           position?: number
           slug: string
+          tenant_id?: number | null
         }
         Update: {
           color?: string
@@ -230,6 +271,7 @@ export type Database = {
           name?: string
           position?: number
           slug?: string
+          tenant_id?: number | null
         }
         Relationships: []
       }
@@ -241,6 +283,7 @@ export type Database = {
           used: boolean
           fingerprint: string | null
           ip: string | null
+          tenant_id: number | null
           created_at: string
         }
         Insert: {
@@ -250,6 +293,7 @@ export type Database = {
           used?: boolean
           fingerprint?: string | null
           ip?: string | null
+          tenant_id?: number | null
           created_at?: string
         }
         Update: {
@@ -259,6 +303,7 @@ export type Database = {
           used?: boolean
           fingerprint?: string | null
           ip?: string | null
+          tenant_id?: number | null
           created_at?: string
         }
         Relationships: []
@@ -269,6 +314,7 @@ export type Database = {
           created_at: string
           id: string
           position: number
+          tenant_id: number | null
           text: string
         }
         Insert: {
@@ -276,6 +322,7 @@ export type Database = {
           created_at?: string
           id?: string
           position?: number
+          tenant_id?: number | null
           text: string
         }
         Update: {
@@ -283,6 +330,7 @@ export type Database = {
           created_at?: string
           id?: string
           position?: number
+          tenant_id?: number | null
           text?: string
         }
         Relationships: []
@@ -300,6 +348,7 @@ export type Database = {
           shipping_address: Json | null
           status: string
           subtotal: number
+          tenant_id: number | null
           total: number
           updated_at: string
         }
@@ -315,6 +364,7 @@ export type Database = {
           shipping_address?: Json | null
           status?: string
           subtotal: number
+          tenant_id?: number | null
           total: number
           updated_at?: string
         }
@@ -330,6 +380,7 @@ export type Database = {
           shipping_address?: Json | null
           status?: string
           subtotal?: number
+          tenant_id?: number | null
           total?: number
           updated_at?: string
         }
@@ -399,6 +450,7 @@ export type Database = {
           price: number
           slug: string
           stock: number
+          tenant_id: number | null
           title: string
           updated_at: string
         }
@@ -414,6 +466,7 @@ export type Database = {
           price: number
           slug: string
           stock?: number
+          tenant_id?: number | null
           title: string
           updated_at?: string
         }
@@ -429,6 +482,7 @@ export type Database = {
           price?: number
           slug?: string
           stock?: number
+          tenant_id?: number | null
           title?: string
           updated_at?: string
         }

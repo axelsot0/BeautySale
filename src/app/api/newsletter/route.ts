@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createServiceClient } from "@/lib/supabase/service";
 import { sendNewsletterWelcome } from "@/lib/email";
+import { DEFAULT_TENANT_ID } from "@/lib/tenant";
 
 const schema = z.object({
   email: z.string().email(),
@@ -41,12 +42,14 @@ export async function POST(req: NextRequest) {
   const { email, fp } = parsed.data;
   const normalizedEmail = email.toLowerCase().trim();
   const ip = getClientIp(req);
+  const tenantId = DEFAULT_TENANT_ID;
   const supabase = createServiceClient();
 
-  // 1. Email already subscribed?
+  // 1. Email already subscribed (to this store)?
   const { data: byEmail } = await supabase
     .from("newsletter_subscribers")
     .select("id, code")
+    .eq("tenant_id", tenantId)
     .eq("email", normalizedEmail)
     .maybeSingle();
 
@@ -54,11 +57,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "already_subscribed" }, { status: 409 });
   }
 
-  // 2. Fingerprint already used with a different email?
+  // 2. Fingerprint already used with a different email (in this store)?
   if (fp) {
     const { data: byFp } = await supabase
       .from("newsletter_subscribers")
       .select("id")
+      .eq("tenant_id", tenantId)
       .eq("fingerprint", fp)
       .maybeSingle();
 
@@ -71,7 +75,7 @@ export async function POST(req: NextRequest) {
   const code = generateCode();
   const { error: insertError } = await supabase
     .from("newsletter_subscribers")
-    .insert({ email: normalizedEmail, code, fingerprint: fp ?? null, ip });
+    .insert({ email: normalizedEmail, code, fingerprint: fp ?? null, ip, tenant_id: tenantId });
 
   if (insertError) {
     // Race condition: duplicate email inserted concurrently

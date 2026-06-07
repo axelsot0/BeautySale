@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getAdminUser } from "@/lib/auth";
+import { getAdminTenantId } from "@/lib/tenant-context";
 import { uploadImage, deleteImageByUrl } from "@/lib/storage";
 import { BRAND_STYLE_KEYS, DEFAULT_BRAND_STYLE } from "@/lib/brand-styles";
 
@@ -18,13 +19,14 @@ const schema = z.object({
 
 export type BrandFormState = { error?: string };
 
-async function ensureAdmin() {
+async function ensureAdmin(): Promise<number> {
   const user = await getAdminUser();
   if (!user) throw new Error("unauthorized");
+  return getAdminTenantId();
 }
 
 export async function saveBrand(_prev: BrandFormState, formData: FormData): Promise<BrandFormState> {
-  await ensureAdmin();
+  const tenantId = await ensureAdmin();
 
   const parsed = schema.safeParse({
     id: formData.get("id") || undefined,
@@ -54,7 +56,7 @@ export async function saveBrand(_prev: BrandFormState, formData: FormData): Prom
     const { error } = await supabase.from("brands").update(update).eq("id", id);
     if (error) return { error: error.message };
   } else {
-    const { error } = await supabase.from("brands").insert({ ...payload, logo_url: logoUrl ?? null });
+    const { error } = await supabase.from("brands").insert({ ...payload, logo_url: logoUrl ?? null, tenant_id: tenantId });
     if (error) return { error: error.message };
   }
 
