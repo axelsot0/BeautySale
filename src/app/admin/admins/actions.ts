@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getAdminUser } from "@/lib/auth";
+import { getAdminTenantId } from "@/lib/tenant-context";
 
 const schema = z.object({
   email: z.string().email().toLowerCase(),
@@ -39,6 +40,10 @@ export async function createAdmin(
   const { email, full_name, password } = parsed.data;
   const supabase = createServiceClient();
 
+  // New admins belong to the creator's tenant.
+  const tenantId = await getAdminTenantId();
+  const appMeta = { is_admin: true, role: "admin", tenant_id: tenantId, active: true };
+
   // Check email isn't already an admin
   const { data: existing } = await supabase
     .from("admins")
@@ -52,11 +57,12 @@ export async function createAdmin(
   let authUser = authList.users.find((u) => u.email?.toLowerCase() === email);
 
   if (authUser) {
-    // Existing auth user — update password + flag is_admin in metadata
+    // Existing auth user — update password + claims
     await supabase.auth.admin.updateUserById(authUser.id, {
       password,
       email_confirm: true,
       user_metadata: { ...(authUser.user_metadata ?? {}), full_name, is_admin: true, role: "admin" },
+      app_metadata: { ...(authUser.app_metadata ?? {}), ...appMeta },
     });
   } else {
     // Create new auth user
@@ -65,6 +71,7 @@ export async function createAdmin(
       password,
       email_confirm: true,
       user_metadata: { full_name, is_admin: true, role: "admin" },
+      app_metadata: appMeta,
     });
     if (error || !data.user) return { error: `Auth error: ${error?.message ?? "unknown"}` };
     authUser = data.user;
@@ -75,6 +82,9 @@ export async function createAdmin(
     user_id: authUser.id,
     email,
     full_name,
+    role: "admin",
+    tenant_id: tenantId,
+    active: true,
     created_by: me.id,
   });
   if (insertErr) return { error: `DB error: ${insertErr.message}` };
