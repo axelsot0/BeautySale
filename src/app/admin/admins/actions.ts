@@ -117,11 +117,16 @@ export async function deleteAdmin(formData: FormData) {
   revalidatePath("/admin/admins");
 }
 
-export async function resetAdminPassword(formData: FormData) {
+export type ResetState = { ok?: boolean; error?: string };
+
+export async function resetAdminPassword(
+  _prev: ResetState,
+  formData: FormData,
+): Promise<ResetState> {
   await ensureAdmin();
   const id = String(formData.get("id") ?? "");
   const newPassword = String(formData.get("password") ?? "");
-  if (!id || newPassword.length < 6) return;
+  if (!id || newPassword.length < 6) return { error: "Mínimo 6 caracteres" };
 
   const supabase = createServiceClient();
   const { data: row } = await supabase
@@ -129,8 +134,13 @@ export async function resetAdminPassword(formData: FormData) {
     .select("user_id")
     .eq("id", id)
     .single();
-  if (!row?.user_id) return;
+  if (!row?.user_id) return { error: "Admin no encontrado" };
 
-  await supabase.auth.admin.updateUserById(row.user_id, { password: newPassword });
+  const { error } = await supabase.auth.admin.updateUserById(row.user_id, {
+    password: newPassword,
+  });
+  if (error) return { error: error.message };
+
   revalidatePath("/admin/admins");
+  return { ok: true };
 }
