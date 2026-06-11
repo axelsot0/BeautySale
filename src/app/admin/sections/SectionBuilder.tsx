@@ -5,7 +5,7 @@ import {
   ChevronUp, ChevronDown, Trash2, Eye, EyeOff,
   Plus, Settings2, Loader2, Upload, GripVertical,
 } from "lucide-react";
-import { SECTION_TYPES, sectionLabel } from "@/lib/sections";
+import { SECTION_TYPES, sectionLabel, parseCustomBlocks, MAX_CUSTOM_BLOCKS, type CustomBlock } from "@/lib/sections";
 import { LinkPicker } from "@/components/admin/LinkPicker";
 import { addSection, deleteSection, toggleSection, moveSection, updateSection, uploadSectionImage, reorderSections } from "./actions";
 import type { NewsletterConfig } from "@/lib/data/theme-query";
@@ -30,11 +30,13 @@ export function SectionBuilder({
   categories,
   newsletterConfig,
   onChanged,
+  isPro = false,
 }: {
   sections: SectionRow[];
   categories: { slug: string; name: string }[];
   newsletterConfig: NewsletterConfig;
   onChanged?: () => void;
+  isPro?: boolean;
 }) {
   const [addType, setAddType] = useState(SECTION_TYPES[0].type);
   const [adding, startAdd] = useTransition();
@@ -85,7 +87,9 @@ export function SectionBuilder({
           disabled={adding}
         >
           {SECTION_TYPES.map((t) => (
-            <option key={t.type} value={t.type}>{t.label}</option>
+            <option key={t.type} value={t.type} disabled={t.pro && !isPro}>
+              {t.label}{t.pro ? (isPro ? " ★" : " (PRO)") : ""}
+            </option>
           ))}
         </select>
         <button
@@ -159,7 +163,7 @@ function SectionCard({
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [pendingAction, setPendingAction] = useState<string | null>(null);
-  const hasConfig = ["banner", "product_carousel", "mosaic", "newsletter"].includes(section.type);
+  const hasConfig = ["banner", "product_carousel", "mosaic", "newsletter", "custom"].includes(section.type);
 
   function run(name: string, fn: () => Promise<unknown>) {
     if (pending) return;
@@ -399,6 +403,10 @@ function ConfigFields({
     );
   }
 
+  if (section.type === "custom") {
+    return <CustomBlocksEditor initial={parseCustomBlocks(c.blocks_json)} />;
+  }
+
   if (section.type === "newsletter") {
     return (
       <>
@@ -432,5 +440,139 @@ function Input({ name, label, def }: { name: string; label: string; def?: string
       <span className="text-xs font-semibold text-plum-soft">{label}</span>
       <input name={name} defaultValue={def ?? ""} className={field} />
     </label>
+  );
+}
+
+// ── Editor de bloques (sección personalizada, PRO) ─────────────────────────
+
+const BLOCK_LABELS: Record<CustomBlock["kind"], string> = {
+  heading: "Título",
+  text: "Texto",
+  image: "Imagen",
+  button: "Botón",
+};
+
+function newBlock(kind: CustomBlock["kind"]): CustomBlock {
+  switch (kind) {
+    case "heading": return { kind, text: "" };
+    case "text":    return { kind, text: "" };
+    case "image":   return { kind, url: "" };
+    case "button":  return { kind, label: "", link: "" };
+  }
+}
+
+function CustomBlocksEditor({ initial }: { initial: CustomBlock[] }) {
+  const [blocks, setBlocks] = useState<CustomBlock[]>(initial);
+  const [addKind, setAddKind] = useState<CustomBlock["kind"]>("heading");
+
+  function update(i: number, patch: Partial<CustomBlock>) {
+    setBlocks((bs) => bs.map((b, j) => (j === i ? ({ ...b, ...patch } as CustomBlock) : b)));
+  }
+  function remove(i: number) {
+    setBlocks((bs) => bs.filter((_, j) => j !== i));
+  }
+  function move(i: number, dir: -1 | 1) {
+    setBlocks((bs) => {
+      const next = [...bs];
+      const j = i + dir;
+      if (j < 0 || j >= next.length) return bs;
+      [next[i], next[j]] = [next[j], next[i]];
+      return next;
+    });
+  }
+
+  return (
+    <div className="space-y-3">
+      <input type="hidden" name="blocks_json" value={JSON.stringify(blocks)} />
+
+      {blocks.map((b, i) => (
+        <div key={i} className="rounded-xl border border-plum/10 p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-widest text-plum-soft">
+              {BLOCK_LABELS[b.kind]}
+            </span>
+            <div className="flex items-center gap-1">
+              <button type="button" onClick={() => move(i, -1)} disabled={i === 0}
+                className="grid h-7 w-7 place-items-center rounded hover:bg-plum/5 disabled:opacity-20">
+                <ChevronUp className="h-3.5 w-3.5" />
+              </button>
+              <button type="button" onClick={() => move(i, 1)} disabled={i === blocks.length - 1}
+                className="grid h-7 w-7 place-items-center rounded hover:bg-plum/5 disabled:opacity-20">
+                <ChevronDown className="h-3.5 w-3.5" />
+              </button>
+              <button type="button" onClick={() => remove(i)}
+                className="grid h-7 w-7 place-items-center rounded hover:bg-pink/10 hover:text-pink">
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {(b.kind === "heading" || b.kind === "text") && (
+            b.kind === "text" ? (
+              <textarea
+                value={b.text}
+                onChange={(e) => update(i, { text: e.target.value })}
+                rows={2}
+                placeholder="Escribí el texto…"
+                className={field}
+              />
+            ) : (
+              <input
+                value={b.text}
+                onChange={(e) => update(i, { text: e.target.value })}
+                placeholder="Título…"
+                className={field}
+              />
+            )
+          )}
+          {b.kind === "image" && (
+            <input
+              value={b.url}
+              onChange={(e) => update(i, { url: e.target.value })}
+              placeholder="https://… (URL de la imagen)"
+              className={field}
+            />
+          )}
+          {b.kind === "button" && (
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                value={b.label}
+                onChange={(e) => update(i, { label: e.target.value })}
+                placeholder="Texto del botón"
+                className={field}
+              />
+              <input
+                value={b.link}
+                onChange={(e) => update(i, { link: e.target.value })}
+                placeholder="/productos o https://…"
+                className={field}
+              />
+            </div>
+          )}
+        </div>
+      ))}
+
+      {blocks.length < MAX_CUSTOM_BLOCKS && (
+        <div className="flex items-center gap-2">
+          <select
+            value={addKind}
+            onChange={(e) => setAddKind(e.target.value as CustomBlock["kind"])}
+            className={`${field} max-w-[160px]`}
+          >
+            {(Object.keys(BLOCK_LABELS) as CustomBlock["kind"][]).map((k) => (
+              <option key={k} value={k}>{BLOCK_LABELS[k]}</option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={() => setBlocks((bs) => [...bs, newBlock(addKind)])}
+            className="inline-flex items-center gap-1.5 rounded-full border border-plum/20 px-4 py-2 text-sm font-semibold hover:bg-plum/5 transition"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Agregar bloque
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

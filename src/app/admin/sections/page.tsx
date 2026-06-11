@@ -1,6 +1,7 @@
 import { createServiceClient } from "@/lib/supabase/service";
-import { getAdminTenantId } from "@/lib/tenant-context";
+import { getAdminTenantId, getAdminMembership } from "@/lib/tenant-context";
 import { getNewsletterConfig } from "@/lib/data/theme-query";
+import { getTenantStatus } from "@/lib/demo-server";
 import { SectionBuilder } from "./SectionBuilder";
 
 export const dynamic = "force-dynamic";
@@ -9,11 +10,15 @@ export default async function AdminSectionsPage() {
   const supabase = createServiceClient();
   const tenantId = await getAdminTenantId();
 
-  const [{ data: sections }, { data: categories }, newsletterConfig] = await Promise.all([
+  const [{ data: sections }, { data: categories }, newsletterConfig, membership, status] = await Promise.all([
     supabase.from("sections").select("*").eq("tenant_id", tenantId).order("position", { ascending: true }),
     supabase.from("categories").select("slug, name").eq("tenant_id", tenantId).order("position", { ascending: true }),
     getNewsletterConfig(tenantId),
+    getAdminMembership(),
+    getTenantStatus(tenantId),
   ]);
+
+  const isPro = membership?.role === "developer" || status.plan === "pro";
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -36,6 +41,7 @@ export default async function AdminSectionsPage() {
         }))}
         categories={categories ?? []}
         newsletterConfig={newsletterConfig}
+        isPro={isPro}
       />
     </div>
   );

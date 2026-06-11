@@ -18,11 +18,13 @@ export function EditorClient({
   categories,
   newsletterConfig,
   previewPath = "/store",
+  isPro = false,
 }: {
   sections: SectionRow[];
   categories: { slug: string; name: string }[];
   newsletterConfig: NewsletterConfig;
   previewPath?: string;
+  isPro?: boolean;
 }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [mobile, setMobile] = useState(false);
@@ -46,6 +48,7 @@ export function EditorClient({
           categories={categories}
           newsletterConfig={newsletterConfig}
           onChanged={reload}
+          isPro={isPro}
         />
       </div>
 

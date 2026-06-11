@@ -1,6 +1,6 @@
 import { ArrowRight } from "lucide-react";
 import type { Section } from "@/lib/data/sections-query";
-import type { SectionConfig } from "@/lib/sections";
+import { parseCustomBlocks, type SectionConfig } from "@/lib/sections";
 import {
   getCategories,
   getProductsByCategory,
@@ -97,6 +97,56 @@ async function RenderSection({ section, tenantId }: { section: Section; tenantId
             <h2 className="font-display text-3xl md:text-5xl">{nl.title}</h2>
             {nl.subtitle && <p className="text-plum-soft">{nl.subtitle}</p>}
             <NewsletterForm title={nl.title} subtitle={nl.subtitle} discountPct={nl.discountPct} />
+          </div>
+        </section>
+      );
+    }
+
+    case "custom": {
+      const blocks = parseCustomBlocks(c.blocks_json);
+      if (blocks.length === 0) return null;
+      return (
+        <section className="py-10 md:py-14">
+          <div className="max-w-3xl mx-auto px-4 md:px-8 space-y-6 text-center">
+            {blocks.map((b, i) => {
+              switch (b.kind) {
+                case "heading":
+                  return (
+                    <h2 key={i} className="font-display text-3xl md:text-5xl leading-tight">
+                      {b.text}
+                    </h2>
+                  );
+                case "text":
+                  return (
+                    <p key={i} className="text-plum-soft text-lg leading-relaxed">
+                      {b.text}
+                    </p>
+                  );
+                case "image":
+                  return b.url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      key={i}
+                      src={b.url}
+                      alt=""
+                      className="w-full rounded-[28px] object-cover max-h-[480px]"
+                    />
+                  ) : null;
+                case "button":
+                  return (
+                    <a
+                      key={i}
+                      href={b.link || "#"}
+                      className="inline-flex items-center gap-2 rounded-full bg-pink px-7 py-3.5 font-bold text-cream hover:opacity-90 transition"
+                    >
+                      {b.label}
+                      <ArrowRight className="h-4 w-4" />
+                    </a>
+                  );
+                default:
+                  return null;
+              }
+            })}
           </div>
         </section>
       );

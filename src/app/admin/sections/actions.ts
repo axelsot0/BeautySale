@@ -3,8 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getAdminUser } from "@/lib/auth";
-import { getAdminTenantId } from "@/lib/tenant-context";
-import { defaultConfig, type SectionType, type SectionConfig } from "@/lib/sections";
+import { getAdminTenantId, getAdminMembership } from "@/lib/tenant-context";
+import { getTenantStatus } from "@/lib/demo-server";
+import { defaultConfig, parseCustomBlocks, MAX_CUSTOM_BLOCKS, type SectionType, type SectionConfig } from "@/lib/sections";
 
 async function ensureAdmin(): Promise<number> {
   const u = await getAdminUser();
@@ -12,17 +13,26 @@ async function ensureAdmin(): Promise<number> {
   return getAdminTenantId();
 }
 
+// Secciones personalizadas: solo plan Pro (developers siempre pueden).
+async function canUseCustomSections(tenantId: number): Promise<boolean> {
+  const m = await getAdminMembership();
+  if (m?.role === "developer") return true;
+  const status = await getTenantStatus(tenantId);
+  return status.plan === "pro";
+}
+
 function revalidate() {
   revalidatePath("/admin/sections");
   revalidatePath("/", "layout");
 }
 
-const TYPES: SectionType[] = ["banner", "product_carousel", "mosaic", "flash_sale", "brand_strip", "newsletter"];
+const TYPES: SectionType[] = ["banner", "product_carousel", "mosaic", "flash_sale", "brand_strip", "newsletter", "custom"];
 
 export async function addSection(formData: FormData) {
   const tenantId = await ensureAdmin();
   const type = String(formData.get("type") ?? "") as SectionType;
   if (!TYPES.includes(type)) return;
+  if (type === "custom" && !(await canUseCustomSections(tenantId))) return;
 
   const supabase = createServiceClient();
   const { data: last } = await supabase
@@ -138,6 +148,15 @@ export async function updateSection(formData: FormData) {
   }
 
   let config: SectionConfig = {};
+  if (type === "custom") {
+    if (!(await canUseCustomSections(tenantId))) return;
+    // Re-serializa tras validar estructura y tope de bloques
+    const blocks = parseCustomBlocks(String(formData.get("blocks_json") ?? "")).slice(0, MAX_CUSTOM_BLOCKS);
+    config = { blocks_json: JSON.stringify(blocks) };
+    await supabase.from("sections").update({ config }).eq("id", id).eq("tenant_id", tenantId);
+    revalidate();
+    return;
+  }
   switch (type) {
     case "banner":
       config = {
