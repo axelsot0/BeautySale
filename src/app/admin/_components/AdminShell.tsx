@@ -210,6 +210,7 @@ function Sidebar({
             Viendo tienda
           </label>
           <select
+            key={currentTenantId}
             name="tenant_id"
             defaultValue={currentTenantId}
             onChange={(e) => e.currentTarget.form?.requestSubmit()}

@@ -34,19 +34,20 @@ export type Preset = {
   palette: Palette;
 };
 
-// Original palette (matches globals.css @theme defaults).
+// Default palette: Durazno Dorado — cálido, dulce, acogedor.
+// Used by all storefronts and platform pages that don't have a custom theme set.
 export const DEFAULT_PALETTE: Palette = {
-  pink: "#FF4D8B",
-  pinkSoft: "#FFB3CC",
-  lavender: "#B5A3E8",
-  lavenderSoft: "#E5DEFF",
-  butter: "#FFE066",
-  butterSoft: "#FFF3B0",
-  mint: "#7DD3C0",
-  mintSoft: "#CFEFE6",
-  cream: "#FFF8F0",
-  plum: "#2D1B4E",
-  plumSoft: "#5C4A82",
+  pink: "#FF7A59",
+  pinkSoft: "#FFCBBC",
+  lavender: "#F4A26C",
+  lavenderSoft: "#FBDDC6",
+  butter: "#FFCF5C",
+  butterSoft: "#FFEDBF",
+  mint: "#9AD9B0",
+  mintSoft: "#DCF2E5",
+  cream: "#FFF6EE",
+  plum: "#4A2511",
+  plumSoft: "#7C5740",
 };
 
 // The 6 core tokens a user edits in the custom creator. Soft variants are derived.
@@ -137,13 +138,34 @@ export function paletteToCssVars(p: Palette): Record<string, string> {
   };
 }
 
+// The original pink palette (kept as a preset option).
+export const PINK_PALETTE: Palette = {
+  pink: "#FF4D8B",
+  pinkSoft: "#FFB3CC",
+  lavender: "#B5A3E8",
+  lavenderSoft: "#E5DEFF",
+  butter: "#FFE066",
+  butterSoft: "#FFF3B0",
+  mint: "#7DD3C0",
+  mintSoft: "#CFEFE6",
+  cream: "#FFF8F0",
+  plum: "#2D1B4E",
+  plumSoft: "#5C4A82",
+};
+
 // Curated preset palettes with attractive names.
 export const PRESETS: Preset[] = [
   {
+    id: "durazno-dorado",
+    name: "Durazno Dorado",
+    tagline: "El look por defecto de la plataforma",
+    palette: DEFAULT_PALETTE,
+  },
+  {
     id: "rosa-original",
     name: "Rosa Original",
-    tagline: "El look insignia de BeautySale",
-    palette: DEFAULT_PALETTE,
+    tagline: "El look clásico de BeautySale",
+    palette: PINK_PALETTE,
   },
   {
     id: "menta-glacial",
@@ -179,24 +201,6 @@ export const PRESETS: Preset[] = [
       cream: "#F6F2FF",
       plum: "#231043",
       plumSoft: "#574B73",
-    },
-  },
-  {
-    id: "durazno-dorado",
-    name: "Durazno Dorado",
-    tagline: "Cálido, dulce, acogedor",
-    palette: {
-      pink: "#FF7A59",
-      pinkSoft: "#FFCBBC",
-      lavender: "#F4A26C",
-      lavenderSoft: "#FBDDC6",
-      butter: "#FFCF5C",
-      butterSoft: "#FFEDBF",
-      mint: "#9AD9B0",
-      mintSoft: "#DCF2E5",
-      cream: "#FFF6EE",
-      plum: "#4A2511",
-      plumSoft: "#7C5740",
     },
   },
   {

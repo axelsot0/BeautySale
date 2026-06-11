@@ -48,11 +48,11 @@ export async function saveTheme(_prev: ThemeState, formData: FormData): Promise<
   return { ok: true };
 }
 
-// Reset to the built-in default palette (theme = null).
+// Reset to the built-in default palette (theme = null → fallback to DEFAULT_PALETTE).
 export async function resetTheme(): Promise<ThemeState> {
   const tenantId = await ensureAdmin();
   const supabase = createServiceClient();
-  const { error } = await supabase.from("platform_settings").update({ theme: null }).eq("id", 1);
+  const { error } = await supabase.from("tenants").update({ theme: null }).eq("id", tenantId);
   if (error) return { error: error.message };
   revalidateAll("reset");
   return { ok: true };
@@ -79,7 +79,7 @@ export async function saveLogo(_prev: ThemeState, formData: FormData): Promise<T
     .eq("id", tenantId)
     .single();
 
-  const { error } = await supabase.from("platform_settings").update({ logo_url: url }).eq("id", 1);
+  const { error } = await supabase.from("tenants").update({ logo_url: url }).eq("id", tenantId);
   if (error) return { error: error.message };
 
   if (prev?.logo_url) await deleteImageByUrl(prev.logo_url, "brand-assets");
@@ -155,7 +155,7 @@ export async function saveSocialLinks(_prev: ThemeState, formData: FormData): Pr
   }
 
   const supabase = createServiceClient();
-  const { error } = await supabase.from("platform_settings").update({ social_links: links }).eq("id", 1);
+  const { error } = await supabase.from("tenants").update({ social_links: links }).eq("id", tenantId);
   if (error) return { error: error.message };
 
   revalidateAll("social");
@@ -170,7 +170,7 @@ export async function removeLogo(): Promise<ThemeState> {
     .select("logo_url")
     .eq("id", tenantId)
     .single();
-  const { error } = await supabase.from("platform_settings").update({ logo_url: null }).eq("id", 1);
+  const { error } = await supabase.from("tenants").update({ logo_url: null }).eq("id", tenantId);
   if (error) return { error: error.message };
   if (prev?.logo_url) await deleteImageByUrl(prev.logo_url, "brand-assets");
   revalidateAll("logo-remove");
