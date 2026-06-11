@@ -18,7 +18,7 @@ export default async function AdminSettingsPage() {
   const supabase = createServiceClient();
   const tenantId = await getAdminTenantId();
 
-  const [{ data }, theme, footer, newsletter] = await Promise.all([
+  const [{ data }, theme, footer, newsletter, { data: cats }] = await Promise.all([
     supabase
       .from("tenants")
       .select("paypal_client_id, paypal_secret, paypal_mode, site_name, social_links, whatsapp_checkout")
@@ -27,7 +27,13 @@ export default async function AdminSettingsPage() {
     getActiveTheme(tenantId),
     getFooterConfig(tenantId),
     getNewsletterConfig(tenantId),
+    supabase
+      .from("categories")
+      .select("slug, name")
+      .eq("tenant_id", tenantId)
+      .order("name"),
   ]);
+  const categories = (cats ?? []) as { slug: string; name: string }[];
 
   const siteName = (data?.site_name as string | null)?.trim() || DEFAULT_SITE_NAME;
   const social   = parseSocialLinks(data?.social_links);
@@ -50,22 +56,21 @@ export default async function AdminSettingsPage() {
       {/* Nombre + Redes (disponible en demo) */}
       <SiteSettingsForm siteName={siteName} social={social} />
 
+      {/* Menú de navegación (disponible en demo) */}
+      <section className="rounded-3xl border border-plum/10 bg-white p-6 space-y-3">
+        <h2 className="font-display text-2xl">Menú de navegación</h2>
+        <p className="text-sm text-plum-soft">
+          Los enlaces del header. ★ = destacado (color accent). Sin cambios = menú por defecto.
+        </p>
+        <NavLinksForm links={theme.navLinks} categories={categories} />
+      </section>
+
       {demo ? (
         <DemoLock title="Personalización avanzada y pagos">
-          Menú de navegación, footer, newsletter y métodos de pago se desbloquean al activar
-          tu tienda.
+          Footer, newsletter y métodos de pago se desbloquean al activar tu tienda.
         </DemoLock>
       ) : (
         <>
-          {/* Menú de navegación */}
-          <section className="rounded-3xl border border-plum/10 bg-white p-6 space-y-3">
-            <h2 className="font-display text-2xl">Menú de navegación</h2>
-            <p className="text-sm text-plum-soft">
-              Los enlaces del header. ★ = destacado (color accent). Sin cambios = menú por defecto.
-            </p>
-            <NavLinksForm links={theme.navLinks} />
-          </section>
-
           {/* Footer */}
           <section className="rounded-3xl border border-plum/10 bg-white p-6 space-y-4">
             <h2 className="font-display text-2xl">Footer</h2>

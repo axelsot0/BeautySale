@@ -119,8 +119,8 @@ export async function saveNavLinks(
   _prev: SettingsState,
   formData: FormData,
 ): Promise<SettingsState> {
+  // Personalización básica: disponible también en demo.
   const tenantId = await ensureAdmin();
-  if (await isDemoStore(tenantId)) return DEMO_BLOCKED;
   let links: unknown;
   try {
     links = JSON.parse(String(formData.get("nav_links") ?? "[]"));

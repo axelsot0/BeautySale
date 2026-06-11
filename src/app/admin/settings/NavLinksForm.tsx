@@ -7,11 +7,30 @@ import type { NavLink } from "@/lib/data/theme-query";
 
 const field = "rounded-xl border border-plum/15 px-3 py-2 text-sm outline-none focus:border-pink";
 const INITIAL: SettingsState = {};
+const CUSTOM = "__custom__";
 
-export function NavLinksForm({ links }: { links: NavLink[] }) {
+const STATIC_LINKS = [
+  { value: "/productos", label: "Todos los productos" },
+  { value: "/ofertas", label: "Ofertas" },
+  { value: "/store", label: "Inicio de la tienda" },
+];
+
+export function NavLinksForm({
+  links,
+  categories = [],
+}: {
+  links: NavLink[];
+  categories?: { slug: string; name: string }[];
+}) {
   const [items, setItems] = useState<NavLink[]>(links);
   const [state, setState] = useState<SettingsState>(INITIAL);
   const [pending, startTransition] = useTransition();
+
+  const options = [
+    ...STATIC_LINKS,
+    ...categories.map((c) => ({ value: `/c/${c.slug}`, label: `Categoría: ${c.name}` })),
+  ];
+  const known = new Set(options.map((o) => o.value));
 
   function add() {
     setItems((p) => [...p, { label: "", href: "", highlight: false }]);
@@ -41,39 +60,57 @@ export function NavLinksForm({ links }: { links: NavLink[] }) {
       {items.length === 0 && (
         <p className="text-sm text-plum-soft">Sin enlaces. Agregá el primero abajo.</p>
       )}
-      {items.map((item, i) => (
-        <div key={i} className="flex gap-2 items-center flex-wrap">
-          <input
-            value={item.label}
-            onChange={(e) => updateField(i, "label", e.target.value)}
-            placeholder="Etiqueta (ej: Ojos)"
-            className={`${field} flex-1 min-w-[140px]`}
-          />
-          <input
-            value={item.href}
-            onChange={(e) => updateField(i, "href", e.target.value)}
-            placeholder="/ruta o URL"
-            className={`${field} flex-1 min-w-[160px]`}
-          />
-          <button
-            type="button"
-            onClick={() => updateField(i, "highlight", !item.highlight)}
-            title="Destacar con color accent"
-            className={`grid h-9 w-9 shrink-0 place-items-center rounded-full transition ${
-              item.highlight ? "bg-pink text-cream" : "border border-plum/15 hover:bg-plum/5"
-            }`}
-          >
-            <Star className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => remove(i)}
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-full hover:bg-pink/10 hover:text-pink"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
-        </div>
-      ))}
+      {items.map((item, i) => {
+        const isCustom = item.href !== "" && !known.has(item.href);
+        return (
+          <div key={i} className="flex gap-2 items-center flex-wrap">
+            <input
+              value={item.label}
+              onChange={(e) => updateField(i, "label", e.target.value)}
+              placeholder="Etiqueta (ej: Ojos)"
+              className={`${field} flex-1 min-w-[140px]`}
+            />
+            <select
+              value={isCustom ? CUSTOM : item.href}
+              onChange={(e) =>
+                updateField(i, "href", e.target.value === CUSTOM ? "/" : e.target.value)
+              }
+              className={`${field} flex-1 min-w-[160px]`}
+            >
+              <option value="">— Elegí destino —</option>
+              {options.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+              <option value={CUSTOM}>URL personalizada…</option>
+            </select>
+            {isCustom && (
+              <input
+                value={item.href}
+                onChange={(e) => updateField(i, "href", e.target.value)}
+                placeholder="https://... o /ruta"
+                className={`${field} flex-1 min-w-[160px]`}
+              />
+            )}
+            <button
+              type="button"
+              onClick={() => updateField(i, "highlight", !item.highlight)}
+              title="Destacar con color accent"
+              className={`grid h-9 w-9 shrink-0 place-items-center rounded-full transition ${
+                item.highlight ? "bg-pink text-cream" : "border border-plum/15 hover:bg-plum/5"
+              }`}
+            >
+              <Star className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => remove(i)}
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full hover:bg-pink/10 hover:text-pink"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
+        );
+      })}
 
       <div className="flex flex-wrap gap-3 items-center">
         <button
