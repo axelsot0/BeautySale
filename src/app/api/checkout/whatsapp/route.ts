@@ -48,16 +48,16 @@ function buildMessage(params: {
 }): string {
   const lines: string[] = [];
 
-  lines.push(`🛍️ *Nuevo pedido - ${params.storeName}*`);
+  lines.push(`*Nuevo pedido - ${params.storeName}*`);
   lines.push("");
 
-  lines.push("📋 *Datos de contacto*");
+  lines.push("*Datos de contacto*");
   lines.push(`Nombre: ${params.customerName}`);
   lines.push(`Email: ${params.customerEmail}`);
   if (params.customerPhone) lines.push(`Tel: ${params.customerPhone}`);
   lines.push("");
 
-  lines.push("📍 *Dirección de envío*");
+  lines.push("*Direccion de envio*");
   lines.push(params.address.street);
   const cityLine = [params.address.city, params.address.state, params.address.zip]
     .filter(Boolean)
@@ -66,10 +66,10 @@ function buildMessage(params: {
   lines.push(params.address.country);
   lines.push("");
 
-  lines.push("🛒 *Resumen del pedido*");
+  lines.push("*Resumen del pedido*");
   for (const item of params.orderItems) {
-    lines.push(`• ${item.title} x${item.quantity} — ${formatPrice(item.price * item.quantity)}`);
-    if (item.image) lines.push(`  📷 ${item.image}`);
+    lines.push(`- ${item.title} x${item.quantity} — ${formatPrice(item.price * item.quantity)}`);
+    if (item.image) lines.push(`  ${item.image}`);
   }
   lines.push("");
 
@@ -77,9 +77,9 @@ function buildMessage(params: {
     lines.push(`Subtotal: ${formatPrice(params.subtotal)}`);
     lines.push(`Descuento (${params.discountCode}): -${formatPrice(params.discountAmount)}`);
   }
-  lines.push(`💰 *Total: ${formatPrice(params.total)}*`);
+  lines.push(`*Total: ${formatPrice(params.total)}*`);
   lines.push("");
-  lines.push(`📦 Pedido #${params.orderId.slice(0, 8).toUpperCase()}`);
+  lines.push(`Pedido #${params.orderId.slice(0, 8).toUpperCase()}`);
 
   return lines.join("\n");
 }
