@@ -37,12 +37,19 @@ export default async function EditBannerPage({
   const { id } = await params;
   const supabase = createServiceClient();
   const tenantId = await getAdminTenantId();
-  const { data } = await supabase
-    .from("banners")
-    .select("*")
-    .eq("tenant_id", tenantId)
-    .eq("id", id)
-    .single();
+  const [{ data }, { data: categories }] = await Promise.all([
+    supabase
+      .from("banners")
+      .select("*")
+      .eq("tenant_id", tenantId)
+      .eq("id", id)
+      .single(),
+    supabase
+      .from("categories")
+      .select("slug, name")
+      .eq("tenant_id", tenantId)
+      .order("position"),
+  ]);
 
   if (!data) notFound();
 
@@ -60,7 +67,11 @@ export default async function EditBannerPage({
 
       <Tabs active={isHero ? "hero" : "banners"} />
 
-      {isHero ? <HeroForm hero={data} /> : <BannerForm banner={data} />}
+      {isHero ? (
+        <HeroForm hero={data} categories={categories ?? []} />
+      ) : (
+        <BannerForm banner={data} categories={categories ?? []} />
+      )}
     </div>
   );
 }

@@ -30,13 +30,20 @@ function Tabs({ active }: { active: "hero" | "banners" }) {
 export default async function AdminHeroPage() {
   const supabase = createServiceClient();
   const tenantId = await getAdminTenantId();
-  const { data: hero } = await supabase
-    .from("banners")
-    .select("*")
-    .eq("tenant_id", tenantId)
-    .eq("slot", "hero")
-    .limit(1)
-    .maybeSingle();
+  const [{ data: hero }, { data: categories }] = await Promise.all([
+    supabase
+      .from("banners")
+      .select("*")
+      .eq("tenant_id", tenantId)
+      .eq("slot", "hero")
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("categories")
+      .select("slug, name")
+      .eq("tenant_id", tenantId)
+      .order("position"),
+  ]);
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -52,7 +59,7 @@ export default async function AdminHeroPage() {
           El hero es el banner principal de la portada. Solo puede haber uno.
           {!hero && " Todavía no hay hero configurado."}
         </p>
-        <HeroForm hero={hero ?? undefined} />
+        <HeroForm hero={hero ?? undefined} categories={categories ?? []} />
       </div>
     </div>
   );

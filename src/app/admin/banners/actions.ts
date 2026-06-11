@@ -15,7 +15,7 @@ const schema = z.object({
   title: z.string().min(1).max(120),
   subtitle: z.string().max(200).optional().nullable(),
   cta_label: z.string().max(40).optional().nullable(),
-  link: z.string().url().optional().nullable().or(z.literal("")),
+  link: z.string().max(500).optional().nullable().or(z.literal("")),
   eyebrow_text: z.string().max(40).optional().nullable(),
   eyebrow_color: z.string().max(9).optional().nullable(),
   cta2_label: z.string().max(40).optional().nullable(),

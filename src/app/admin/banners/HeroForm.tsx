@@ -3,11 +3,18 @@
 import { useActionState, useState, useRef } from "react";
 import { saveHero, type HeroFormState } from "./actions";
 import type { Banner } from "@/lib/data/types";
+import { LinkPicker } from "@/components/admin/LinkPicker";
 import { ImagePlus, X } from "lucide-react";
 
 const INITIAL: HeroFormState = {};
 
-export function HeroForm({ hero }: { hero?: Banner }) {
+export function HeroForm({
+  hero,
+  categories = [],
+}: {
+  hero?: Banner;
+  categories?: { slug: string; name: string }[];
+}) {
   const [state, action, pending] = useActionState(saveHero, INITIAL);
 
   const [preview, setPreview] = useState<string | null>(null);
@@ -144,17 +151,15 @@ export function HeroForm({ hero }: { hero?: Banner }) {
             className="field-input"
           />
         </label>
-        <label className="block">
-          <span className="field-label">Botón principal — link</span>
-          <input
-            type="text"
+        <div>
+          <LinkPicker
             name="link"
+            label="Botón principal — link"
             defaultValue={hero?.link ?? ""}
-            placeholder="/colecciones/primavera"
-            className="field-input"
+            categories={categories}
           />
           {state.fieldErrors?.link && <p className="field-error">{state.fieldErrors.link}</p>}
-        </label>
+        </div>
       </div>
 
       {/* ── CTA secondary ── */}
@@ -170,17 +175,12 @@ export function HeroForm({ hero }: { hero?: Banner }) {
             className="field-input"
           />
         </label>
-        <label className="block">
-          <span className="field-label">Botón secundario — link</span>
-          <input
-            type="text"
-            name="cta2_link"
-            defaultValue={hero?.cta2_link ?? ""}
-            maxLength={200}
-            placeholder="#categorias"
-            className="field-input"
-          />
-        </label>
+        <LinkPicker
+          name="cta2_link"
+          label="Botón secundario — link"
+          defaultValue={hero?.cta2_link ?? ""}
+          categories={categories}
+        />
       </div>
 
       {/* ── Marquee ── */}

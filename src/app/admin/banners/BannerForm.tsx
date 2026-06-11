@@ -3,6 +3,7 @@
 import { useActionState, useState, useRef } from "react";
 import { saveBanner, type BannerFormState } from "./actions";
 import type { Banner } from "@/lib/data/types";
+import { LinkPicker } from "@/components/admin/LinkPicker";
 import { ImagePlus, X } from "lucide-react";
 
 const INITIAL: BannerFormState = {};
@@ -12,7 +13,13 @@ const SLOT_OPTIONS = [
   { value: "sale", label: "Sale (promos)" },
 ];
 
-export function BannerForm({ banner }: { banner?: Banner }) {
+export function BannerForm({
+  banner,
+  categories = [],
+}: {
+  banner?: Banner;
+  categories?: { slug: string; name: string }[];
+}) {
   const [state, action, pending] = useActionState(saveBanner, INITIAL);
   const isEdit = !!banner;
 
@@ -105,17 +112,15 @@ export function BannerForm({ banner }: { banner?: Banner }) {
       </label>
 
       {/* ── Link ── */}
-      <label className="block">
-        <span className="field-label">Link (opcional)</span>
-        <input
-          type="text"
+      <div>
+        <LinkPicker
           name="link"
+          label="Link (opcional)"
           defaultValue={banner?.link ?? ""}
-          placeholder="/blog/rituales"
-          className="field-input"
+          categories={categories}
         />
         {state.fieldErrors?.link && <p className="field-error">{state.fieldErrors.link}</p>}
-      </label>
+      </div>
 
       {/* ── Slot + Position ── */}
       <div className="grid grid-cols-2 gap-4">

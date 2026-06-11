@@ -6,6 +6,7 @@ import {
   Plus, Settings2, Loader2, Upload,
 } from "lucide-react";
 import { SECTION_TYPES, sectionLabel } from "@/lib/sections";
+import { LinkPicker } from "@/components/admin/LinkPicker";
 import { addSection, deleteSection, toggleSection, moveSection, updateSection, uploadSectionImage } from "./actions";
 import type { NewsletterConfig } from "@/lib/data/theme-query";
 
@@ -305,7 +306,7 @@ function ConfigFields({
         <ImageUrlField name="image_url" defaultValue={c.image_url} />
         <div className="grid grid-cols-2 gap-3">
           <Input name="cta_label" label="Texto botón" def={c.cta_label} />
-          <Input name="cta_link" label="Link botón" def={c.cta_link} />
+          <LinkPicker name="cta_link" label="Link botón" defaultValue={c.cta_link} categories={categories} />
         </div>
         <label className="block space-y-1">
           <span className="text-xs font-semibold text-plum-soft">Color de fondo</span>

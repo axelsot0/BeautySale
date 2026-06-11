@@ -1,4 +1,8 @@
+import { createServiceClient } from "@/lib/supabase/service";
+import { getAdminTenantId } from "@/lib/tenant-context";
 import { BannerForm } from "../BannerForm";
+
+export const dynamic = "force-dynamic";
 
 function Tabs() {
   return (
@@ -19,7 +23,15 @@ function Tabs() {
   );
 }
 
-export default function NewBannerPage() {
+export default async function NewBannerPage() {
+  const supabase = createServiceClient();
+  const tenantId = await getAdminTenantId();
+  const { data: categories } = await supabase
+    .from("categories")
+    .select("slug, name")
+    .eq("tenant_id", tenantId)
+    .order("position");
+
   return (
     <div className="space-y-6">
       <header>
@@ -27,7 +39,7 @@ export default function NewBannerPage() {
         <h1 className="font-display text-4xl mt-1">Nuevo banner</h1>
       </header>
       <Tabs />
-      <BannerForm />
+      <BannerForm categories={categories ?? []} />
     </div>
   );
 }
