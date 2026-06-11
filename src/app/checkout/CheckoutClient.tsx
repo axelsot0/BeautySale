@@ -168,10 +168,10 @@ export function CheckoutClient({
         return;
       }
 
-      // Clear cart, then open WhatsApp
+      // Clear cart, redirect to wa.me (same tab — no popup blocking)
+      // Mobile: opens WhatsApp app. Desktop: opens web.whatsapp.com
       clear();
-      window.open(data.waUrl, "_blank", "noopener");
-      window.location.href = `/checkout/success?orderId=${data.orderId}&via=whatsapp`;
+      window.location.href = data.waUrl;
     } catch {
       setError("Error de conexión. Intentá de nuevo.");
     } finally {
