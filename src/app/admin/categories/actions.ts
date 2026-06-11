@@ -81,7 +81,7 @@ export async function saveCategory(
     if (image_url && existingUrl && existingUrl !== image_url) {
       await deleteImageByUrl(existingUrl, "category-images");
     }
-    const { error } = await supabase.from("categories").update(payload).eq("id", id);
+    const { error } = await supabase.from("categories").update(payload).eq("id", id).eq("tenant_id", tenantId);
     if (error) return { error: error.message };
   } else {
     const { error } = await supabase.from("categories").insert({ ...payload, tenant_id: tenantId });
@@ -94,17 +94,17 @@ export async function saveCategory(
 }
 
 export async function deleteCategory(formData: FormData) {
-  await ensureAdmin();
+  const tenantId = await ensureAdmin();
   const id = String(formData.get("id") ?? "");
   if (!id) return;
 
   const supabase = createServiceClient();
-  const { data } = await supabase.from("categories").select("image_url").eq("id", id).single();
+  const { data } = await supabase.from("categories").select("image_url").eq("id", id).eq("tenant_id", tenantId).single();
   if (data?.image_url) {
     await deleteImageByUrl(data.image_url, "category-images");
   }
 
-  await supabase.from("categories").delete().eq("id", id);
+  await supabase.from("categories").delete().eq("id", id).eq("tenant_id", tenantId);
   revalidatePath("/admin/categories");
   revalidatePath("/");
 }

@@ -37,7 +37,7 @@ export async function saveNews(_prev: NewsFormState, formData: FormData): Promis
   const { id, ...payload } = parsed.data;
 
   if (id) {
-    const { error } = await supabase.from("news").update(payload).eq("id", id);
+    const { error } = await supabase.from("news").update(payload).eq("id", id).eq("tenant_id", tenantId);
     if (error) return { error: error.message };
   } else {
     const { error } = await supabase.from("news").insert({ ...payload, tenant_id: tenantId });
@@ -50,26 +50,26 @@ export async function saveNews(_prev: NewsFormState, formData: FormData): Promis
 }
 
 export async function deleteNews(formData: FormData) {
-  await ensureAdmin();
+  const tenantId = await ensureAdmin();
   const id = String(formData.get("id") ?? "");
   if (!id) return;
 
   const supabase = createServiceClient();
-  await supabase.from("news").delete().eq("id", id);
+  await supabase.from("news").delete().eq("id", id).eq("tenant_id", tenantId);
   revalidatePath("/admin/news");
   revalidatePath("/");
 }
 
 export async function toggleNewsActive(formData: FormData) {
-  await ensureAdmin();
+  const tenantId = await ensureAdmin();
   const id = String(formData.get("id") ?? "");
   if (!id) return;
 
   const supabase = createServiceClient();
-  const { data } = await supabase.from("news").select("active").eq("id", id).single();
+  const { data } = await supabase.from("news").select("active").eq("id", id).eq("tenant_id", tenantId).single();
   if (!data) return;
 
-  await supabase.from("news").update({ active: !data.active }).eq("id", id);
+  await supabase.from("news").update({ active: !data.active }).eq("id", id).eq("tenant_id", tenantId);
   revalidatePath("/admin/news");
   revalidatePath("/");
 }

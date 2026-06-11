@@ -79,8 +79,8 @@ export async function moveSection(formData: FormData) {
 
   const a = rows[idx];
   const b = rows[swapIdx];
-  await supabase.from("sections").update({ position: b.position }).eq("id", a.id);
-  await supabase.from("sections").update({ position: a.position }).eq("id", b.id);
+  await supabase.from("sections").update({ position: b.position }).eq("id", a.id).eq("tenant_id", tenantId);
+  await supabase.from("sections").update({ position: a.position }).eq("id", b.id).eq("tenant_id", tenantId);
   revalidate();
 }
 

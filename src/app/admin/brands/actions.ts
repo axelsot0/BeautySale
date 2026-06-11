@@ -53,7 +53,7 @@ export async function saveBrand(_prev: BrandFormState, formData: FormData): Prom
 
   if (id) {
     const update = logoUrl ? { ...payload, logo_url: logoUrl } : payload;
-    const { error } = await supabase.from("brands").update(update).eq("id", id);
+    const { error } = await supabase.from("brands").update(update).eq("id", id).eq("tenant_id", tenantId);
     if (error) return { error: error.message };
   } else {
     const { error } = await supabase.from("brands").insert({ ...payload, logo_url: logoUrl ?? null, tenant_id: tenantId });
@@ -66,13 +66,13 @@ export async function saveBrand(_prev: BrandFormState, formData: FormData): Prom
 }
 
 export async function deleteBrand(formData: FormData) {
-  await ensureAdmin();
+  const tenantId = await ensureAdmin();
   const id = String(formData.get("id") ?? "");
   if (!id) return;
 
   const supabase = createServiceClient();
-  const { data } = await supabase.from("brands").select("logo_url").eq("id", id).single();
-  await supabase.from("brands").delete().eq("id", id);
+  const { data } = await supabase.from("brands").select("logo_url").eq("id", id).eq("tenant_id", tenantId).single();
+  await supabase.from("brands").delete().eq("id", id).eq("tenant_id", tenantId);
   if (data?.logo_url) await deleteImageByUrl(data.logo_url, "brand-assets");
 
   revalidatePath("/admin/brands");
@@ -80,15 +80,15 @@ export async function deleteBrand(formData: FormData) {
 }
 
 export async function toggleBrandActive(formData: FormData) {
-  await ensureAdmin();
+  const tenantId = await ensureAdmin();
   const id = String(formData.get("id") ?? "");
   if (!id) return;
 
   const supabase = createServiceClient();
-  const { data } = await supabase.from("brands").select("active").eq("id", id).single();
+  const { data } = await supabase.from("brands").select("active").eq("id", id).eq("tenant_id", tenantId).single();
   if (!data) return;
 
-  await supabase.from("brands").update({ active: !data.active }).eq("id", id);
+  await supabase.from("brands").update({ active: !data.active }).eq("id", id).eq("tenant_id", tenantId);
   revalidatePath("/admin/brands");
   revalidatePath("/");
 }

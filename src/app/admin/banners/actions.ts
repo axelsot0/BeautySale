@@ -105,7 +105,7 @@ export async function saveBanner(
     if (image_url && existingUrl && existingUrl !== image_url) {
       await deleteImageByUrl(existingUrl, "banner-images");
     }
-    const { error } = await supabase.from("banners").update(payload).eq("id", id);
+    const { error } = await supabase.from("banners").update(payload).eq("id", id).eq("tenant_id", tenantId);
     if (error) return { error: error.message };
   } else {
     const { error } = await supabase.from("banners").insert({ ...payload, tenant_id: tenantId });
@@ -202,7 +202,7 @@ export async function saveHero(
     if (existingUrl && (image_url || removeImage) && existingUrl !== image_url) {
       await deleteImageByUrl(existingUrl, "banner-images");
     }
-    const { error } = await supabase.from("banners").update(payload).eq("id", id);
+    const { error } = await supabase.from("banners").update(payload).eq("id", id).eq("tenant_id", tenantId);
     if (error) return { error: error.message };
   } else {
     const { error } = await supabase.from("banners").insert({ ...payload, tenant_id: tenantId });
@@ -215,29 +215,29 @@ export async function saveHero(
 }
 
 export async function deleteBanner(formData: FormData) {
-  await ensureAdmin();
+  const tenantId = await ensureAdmin();
   const id = String(formData.get("id") ?? "");
   if (!id) return;
 
   const supabase = createServiceClient();
-  const { data } = await supabase.from("banners").select("image_url").eq("id", id).single();
+  const { data } = await supabase.from("banners").select("image_url").eq("id", id).eq("tenant_id", tenantId).single();
   if (data?.image_url) {
     await deleteImageByUrl(data.image_url, "banner-images");
   }
 
-  await supabase.from("banners").delete().eq("id", id);
+  await supabase.from("banners").delete().eq("id", id).eq("tenant_id", tenantId);
   revalidatePath("/admin/banners");
   revalidatePath("/");
 }
 
 export async function toggleBannerActive(formData: FormData) {
-  await ensureAdmin();
+  const tenantId = await ensureAdmin();
   const id = String(formData.get("id") ?? "");
   const current = formData.get("current") === "true";
   if (!id) return;
 
   const supabase = createServiceClient();
-  await supabase.from("banners").update({ active: !current }).eq("id", id);
+  await supabase.from("banners").update({ active: !current }).eq("id", id).eq("tenant_id", tenantId);
   revalidatePath("/admin/banners");
   revalidatePath("/");
 }

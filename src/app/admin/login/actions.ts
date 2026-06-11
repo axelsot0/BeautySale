@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
-import { isAdminEmail, syncAdminClaims } from "@/lib/auth";
+import { syncAdminClaims } from "@/lib/auth";
 
 const schema = z.object({
   email: z.string().email(),
@@ -14,27 +14,32 @@ const schema = z.object({
 
 export type LoginState = { error?: string };
 
+// Generic message used for ALL auth failures — prevents username enumeration.
+const AUTH_ERROR = "Credenciales inválidas";
+
 export async function login(_prev: LoginState, formData: FormData): Promise<LoginState> {
   const parsed = schema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
     next: formData.get("next") ?? undefined,
   });
-  if (!parsed.success) return { error: "Email o contraseña inválidos" };
+  if (!parsed.success) return { error: AUTH_ERROR };
 
   const { email, password, next } = parsed.data;
 
-  if (!(await isAdminEmail(email))) {
-    return { error: "Este email no está autorizado" };
-  }
-
+  // Always attempt signIn first — never reveal whether an email is registered.
   const supabase = await createClient();
   const { data: signin, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error || !signin.user) return { error: "Credenciales inválidas" };
+  if (error || !signin.user) return { error: AUTH_ERROR };
 
-  // Authoritative membership -> JWT claims (role, tenant_id, active).
+  // Verify admin membership from DB (authoritative) and write JWT claims.
   const membership = await syncAdminClaims(signin.user.id, email);
-  if (!membership || membership.active === false) {
+  if (!membership) {
+    // Valid Supabase user but not an admin — sign them back out silently.
+    await supabase.auth.signOut();
+    return { error: AUTH_ERROR };
+  }
+  if (membership.active === false) {
     await supabase.auth.signOut();
     return { error: "Tu cuenta está desactivada" };
   }
@@ -54,7 +59,6 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
   }
 
   await supabase.auth.updateUser({ data: { is_admin: true } });
-  // Refresh so the new app_metadata claims land in the session JWT.
   await supabase.auth.refreshSession();
 
   redirect(next && next.startsWith("/admin") ? next : "/admin");

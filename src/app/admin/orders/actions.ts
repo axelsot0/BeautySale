@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getAdminUser } from "@/lib/auth";
+import { getAdminTenantId } from "@/lib/tenant-context";
 
 const STATUSES = ["pending", "paid", "shipped", "delivered", "cancelled", "declined", "failed"] as const;
 export type OrderStatus = (typeof STATUSES)[number];
@@ -13,13 +14,14 @@ const schema = z.object({
   status: z.enum(STATUSES),
 });
 
-async function ensureAdmin() {
+async function ensureAdmin(): Promise<number> {
   const u = await getAdminUser();
   if (!u) throw new Error("unauthorized");
+  return getAdminTenantId();
 }
 
 export async function updateOrderStatus(formData: FormData) {
-  await ensureAdmin();
+  const tenantId = await ensureAdmin();
 
   const parsed = schema.safeParse({
     id: formData.get("id"),
@@ -28,7 +30,11 @@ export async function updateOrderStatus(formData: FormData) {
   if (!parsed.success) return;
 
   const supabase = createServiceClient();
-  await supabase.from("orders").update({ status: parsed.data.status }).eq("id", parsed.data.id);
+  await supabase
+    .from("orders")
+    .update({ status: parsed.data.status })
+    .eq("id", parsed.data.id)
+    .eq("tenant_id", tenantId);
 
   revalidatePath("/admin/orders");
   revalidatePath(`/admin/orders/${parsed.data.id}`);

@@ -129,7 +129,7 @@ export async function saveProduct(
   };
 
   if (id) {
-    const { error } = await supabase.from("products").update(payload).eq("id", id);
+    const { error } = await supabase.from("products").update(payload).eq("id", id).eq("tenant_id", tenantId);
     if (error) return { error: error.message };
   } else {
     const { error } = await supabase.from("products").insert({ ...payload, tenant_id: tenantId });
@@ -142,61 +142,61 @@ export async function saveProduct(
 }
 
 export async function deleteProduct(formData: FormData) {
-  await ensureAdmin();
+  const tenantId = await ensureAdmin();
   const id = String(formData.get("id") ?? "");
   if (!id) return;
 
   const supabase = createServiceClient();
 
-  // Fetch images to delete from storage
-  const { data } = await supabase.from("products").select("images").eq("id", id).single();
+  // Fetch images to delete from storage (scoped to tenant)
+  const { data } = await supabase.from("products").select("images").eq("id", id).eq("tenant_id", tenantId).single();
   if (data?.images?.length) {
     for (const url of data.images) {
       await deleteImageByUrl(url, "product-images");
     }
   }
 
-  await supabase.from("products").delete().eq("id", id);
+  await supabase.from("products").delete().eq("id", id).eq("tenant_id", tenantId);
   revalidatePath("/admin/products");
   revalidatePath("/");
 }
 
 export async function toggleProductFeatured(formData: FormData) {
-  await ensureAdmin();
+  const tenantId = await ensureAdmin();
   const id = String(formData.get("id") ?? "");
   const current = formData.get("current") === "true";
   if (!id) return;
 
   const supabase = createServiceClient();
-  await supabase.from("products").update({ featured: !current }).eq("id", id);
+  await supabase.from("products").update({ featured: !current }).eq("id", id).eq("tenant_id", tenantId);
   revalidatePath("/admin/products");
   revalidatePath("/");
 }
 
 export async function toggleProductOnSale(formData: FormData) {
-  await ensureAdmin();
+  const tenantId = await ensureAdmin();
   const id = String(formData.get("id") ?? "");
   const current = formData.get("current") === "true";
   if (!id) return;
 
   const supabase = createServiceClient();
-  await supabase.from("products").update({ on_sale: !current }).eq("id", id);
+  await supabase.from("products").update({ on_sale: !current }).eq("id", id).eq("tenant_id", tenantId);
   revalidatePath("/admin/products");
   revalidatePath("/");
 }
 
 export async function removeProductImage(formData: FormData) {
-  await ensureAdmin();
+  const tenantId = await ensureAdmin();
   const productId = String(formData.get("product_id") ?? "");
   const imageUrl = String(formData.get("image_url") ?? "");
   if (!productId || !imageUrl) return;
 
   const supabase = createServiceClient();
-  const { data } = await supabase.from("products").select("images").eq("id", productId).single();
+  const { data } = await supabase.from("products").select("images").eq("id", productId).eq("tenant_id", tenantId).single();
   if (!data) return;
 
   const updated = (data.images ?? []).filter((u: string) => u !== imageUrl);
-  await supabase.from("products").update({ images: updated }).eq("id", productId);
+  await supabase.from("products").update({ images: updated }).eq("id", productId).eq("tenant_id", tenantId);
   await deleteImageByUrl(imageUrl, "product-images");
 
   revalidatePath("/admin/products");
