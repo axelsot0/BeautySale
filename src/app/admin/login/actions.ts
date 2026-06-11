@@ -81,7 +81,8 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
   }
 
   // Block login if the admin's store is deactivated (cascade from developer).
-  if (membership.tenant_id) {
+  // Developers are platform-wide — not bound to any single tenant's active flag.
+  if (membership.tenant_id && membership.role !== "developer") {
     const admin = createServiceClient();
     const { data: tenant } = await admin
       .from("tenants")
