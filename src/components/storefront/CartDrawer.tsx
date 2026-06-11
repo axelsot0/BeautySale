@@ -5,12 +5,18 @@ import { X, Trash2, Plus, Minus, ShoppingBag } from "lucide-react";
 import { useCartStore } from "@/lib/cart/store";
 import { formatPrice } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { getDict, readClientLocale, DEFAULT_LOCALE, type Locale } from "@/lib/i18n";
 
 export function CartDrawer() {
   const { isOpen, closeCart, items, removeItem, setQuantity, subtotal, totalItems } = useCartStore();
   const [hydrated, setHydrated] = useState(false);
-  useEffect(() => { setHydrated(true); }, []);
+  const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
+  useEffect(() => {
+    setHydrated(true);
+    setLocale(readClientLocale());
+  }, []);
   const count = hydrated ? totalItems() : 0;
+  const t = getDict(locale);
 
   // Lock body scroll when open
   useEffect(() => {
@@ -57,17 +63,17 @@ export function CartDrawer() {
           <div className="flex items-center gap-2">
             <ShoppingBag className="h-5 w-5 text-pink" />
             <h2 className="font-display text-xl">
-              Carrito
+              {t.cart_title}
               {count > 0 && (
                 <span className="ml-2 text-sm font-sans font-normal text-plum-soft">
-                  ({count} {count === 1 ? "producto" : "productos"})
+                  ({count} {count === 1 ? t.cart_one : t.cart_many})
                 </span>
               )}
             </h2>
           </div>
           <button
             onClick={closeCart}
-            aria-label="Cerrar carrito"
+            aria-label={t.close_cart}
             className="grid h-9 w-9 place-items-center rounded-full hover:bg-plum/5 transition"
           >
             <X className="h-5 w-5" />
@@ -79,12 +85,12 @@ export function CartDrawer() {
           {items.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full gap-4 text-plum-soft">
               <ShoppingBag className="h-16 w-16 opacity-20" />
-              <p className="font-medium">Tu carrito está vacío</p>
+              <p className="font-medium">{t.cart_empty}</p>
               <button
                 onClick={closeCart}
                 className="rounded-full border border-plum/20 px-5 py-2 text-sm font-semibold hover:bg-plum/5 transition"
               >
-                Seguir comprando
+                {t.keep_shopping}
               </button>
             </div>
           ) : (
@@ -110,7 +116,7 @@ export function CartDrawer() {
                     <p className="font-semibold text-sm leading-tight line-clamp-2">{item.title}</p>
                     <button
                       onClick={() => removeItem(item.id)}
-                      aria-label="Eliminar"
+                      aria-label={t.remove}
                       className="shrink-0 grid h-7 w-7 place-items-center rounded-full hover:bg-pink/10 text-plum-soft hover:text-pink transition"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -154,22 +160,22 @@ export function CartDrawer() {
         {items.length > 0 && (
           <div className="border-t border-plum/10 px-5 py-5 space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-plum-soft">Subtotal</span>
+              <span className="text-sm font-medium text-plum-soft">{t.subtotal}</span>
               <span className="font-display text-2xl">{formatPrice(subtotal())}</span>
             </div>
-            <p className="text-xs text-plum-soft">Envío calculado en el checkout</p>
+            <p className="text-xs text-plum-soft">{t.shipping_note}</p>
             <a
               href="/checkout"
               onClick={closeCart}
               className="block w-full rounded-full bg-pink py-3.5 text-center font-bold text-cream hover:shadow-[0_0_24px_rgba(255,77,139,0.4)] transition"
             >
-              Ir al checkout →
+              {t.go_checkout}
             </a>
             <button
               onClick={closeCart}
               className="block w-full rounded-full border border-plum/15 py-2.5 text-center text-sm font-semibold hover:bg-plum/5 transition"
             >
-              Seguir comprando
+              {t.keep_shopping}
             </button>
           </div>
         )}

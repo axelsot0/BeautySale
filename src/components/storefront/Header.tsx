@@ -5,6 +5,8 @@ import { Heart, Menu, Search, ShoppingBag, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCartStore } from "@/lib/cart/store";
 import { DEFAULT_SITE_NAME } from "@/lib/theme";
+import { getDict, readClientLocale, DEFAULT_LOCALE, type Locale } from "@/lib/i18n";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 import type { NavLink } from "@/lib/data/theme-query";
 
 function Wordmark({ name }: { name: string }) {
@@ -40,8 +42,13 @@ export function Header({
   const [mobileOpen, setMobileOpen] = useState(false);
   const { openCart, totalItems } = useCartStore();
   const [hydrated, setHydrated] = useState(false);
-  useEffect(() => { setHydrated(true); }, []);
+  const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
+  useEffect(() => {
+    setHydrated(true);
+    setLocale(readClientLocale());
+  }, []);
   const count = hydrated ? totalItems() : 0;
+  const t = getDict(locale);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -95,14 +102,15 @@ export function Header({
         </nav>
 
         <div className="ml-auto md:ml-0 flex items-center gap-1">
-          <button aria-label="Buscar" className="grid h-10 w-10 place-items-center rounded-full hover:bg-plum/5">
+          <LanguageSwitcher />
+          <button aria-label={t.search} className="grid h-10 w-10 place-items-center rounded-full hover:bg-plum/5">
             <Search className="h-5 w-5" />
           </button>
-          <button aria-label="Favoritos" className="hidden sm:grid h-10 w-10 place-items-center rounded-full hover:bg-plum/5">
+          <button aria-label={t.favorites} className="hidden sm:grid h-10 w-10 place-items-center rounded-full hover:bg-plum/5">
             <Heart className="h-5 w-5" />
           </button>
           <button
-            aria-label="Carrito"
+            aria-label={t.cart}
             onClick={openCart}
             className="relative grid h-10 w-10 place-items-center rounded-full hover:bg-plum/5"
           >

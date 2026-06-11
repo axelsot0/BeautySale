@@ -1,9 +1,11 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Star } from "lucide-react";
 import { applyDiscount, cn, formatPrice } from "@/lib/utils";
 import type { Product } from "@/lib/data/types";
 import { useCartStore } from "@/lib/cart/store";
+import { getDict, readClientLocale, DEFAULT_LOCALE, type Locale } from "@/lib/i18n";
 
 const PALETTE = ["#FFB3CC", "#E5DEFF", "#FFF3B0", "#CFEFE6", "#FFE5F0", "#D7E9FF"];
 
@@ -19,6 +21,9 @@ export function ProductCard({ product }: { product: Product }) {
   const bg = colorFromSlug(product.slug);
   const productImage = product.images?.[0];
   const { addItem, openCart } = useCartStore();
+  const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
+  useEffect(() => setLocale(readClientLocale()), []);
+  const t = getDict(locale);
 
   function handleAdd(e: React.MouseEvent) {
     e.preventDefault();
@@ -98,7 +103,7 @@ export function ProductCard({ product }: { product: Product }) {
         onClick={handleAdd}
         className="mt-1 rounded-full bg-plum px-4 py-2.5 text-sm font-semibold text-cream transition hover:bg-pink hover:shadow-[0_0_24px_rgba(255,77,139,0.4)]"
       >
-        Agregar
+        {t.add_to_cart}
       </button>
     </a>
   );
