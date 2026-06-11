@@ -36,6 +36,8 @@ async function getStats() {
     pendingOrders,
     recentOrders,
     allOrdersForAggregation,
+    hero,
+    tenant,
   ] = await Promise.all([
     supabase.from("products").select("id", { count: "exact", head: true }).eq("tenant_id", t),
     supabase.from("categories").select("id", { count: "exact", head: true }).eq("tenant_id", t),
@@ -47,6 +49,8 @@ async function getStats() {
     supabase.from("orders").select("id", { count: "exact", head: true }).eq("tenant_id", t).eq("status", "pending"),
     supabase.from("orders").select("*").eq("tenant_id", t).order("created_at", { ascending: false }).limit(5),
     supabase.from("orders").select("items").eq("tenant_id", t).in("status", ["paid", "shipped", "delivered"]),
+    supabase.from("banners").select("id", { count: "exact", head: true }).eq("tenant_id", t).eq("slot", "hero"),
+    supabase.from("tenants").select("site_name, whatsapp_checkout").eq("id", t).maybeSingle(),
   ]);
 
   const revenue = (paidOrders.data ?? []).reduce(
@@ -90,7 +94,58 @@ async function getStats() {
     revenue,
     recentOrders: recentOrders.data ?? [],
     topProducts,
+    hasHero: (hero.count ?? 0) > 0,
+    hasSiteName: !!(tenant.data?.site_name ?? "").trim(),
+    hasWhatsapp: !!(tenant.data?.whatsapp_checkout ?? "").trim(),
   };
+}
+
+function SetupChecklist({ s }: { s: Awaited<ReturnType<typeof getStats>> }) {
+  const items = [
+    { done: s.hasSiteName, label: "Nombre de tu tienda", href: "/admin/settings" },
+    { done: s.categories > 0, label: "Primera categoría", href: "/admin/categories" },
+    { done: s.products > 0, label: "Primer producto", href: "/admin/products/new" },
+    { done: s.hasHero, label: "Portada (hero)", href: "/admin/banners/hero" },
+    { done: s.hasWhatsapp, label: "WhatsApp para cobros", href: "/admin/settings" },
+  ];
+  const doneCount = items.filter((i) => i.done).length;
+  if (doneCount === items.length) return null;
+
+  return (
+    <div className="rounded-[24px] bg-white p-6 border border-plum/5">
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="font-display text-xl">Completá tu tienda</h2>
+        <span className="text-sm font-bold text-pink">{doneCount}/{items.length}</span>
+      </div>
+      <div className="h-1.5 rounded-full bg-plum/10 mb-4">
+        <div
+          className="h-full rounded-full bg-pink transition-all"
+          style={{ width: `${(doneCount / items.length) * 100}%` }}
+        />
+      </div>
+      <ul className="space-y-2">
+        {items.map((i) => (
+          <li key={i.label}>
+            <a
+              href={i.href}
+              className={`flex items-center gap-2.5 text-sm rounded-xl px-3 py-2 transition ${
+                i.done ? "text-plum/40 line-through" : "hover:bg-plum/5 font-medium"
+              }`}
+            >
+              <span
+                className={`grid h-5 w-5 place-items-center rounded-full text-[10px] font-bold shrink-0 ${
+                  i.done ? "bg-mint text-plum" : "bg-plum/10 text-plum/40"
+                }`}
+              >
+                {i.done ? "✓" : ""}
+              </span>
+              {i.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 export default async function AdminDashboard() {
@@ -110,6 +165,8 @@ export default async function AdminDashboard() {
         <h1 className="font-display text-4xl md:text-5xl mt-1">Hola 💖</h1>
         <p className="text-plum-soft mt-2">Resumen rápido del estado de la tienda.</p>
       </header>
+
+      <SetupChecklist s={s} />
 
       {/* Counters */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

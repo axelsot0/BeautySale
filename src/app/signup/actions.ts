@@ -53,5 +53,5 @@ export async function signupStore(_prev: SignupState, formData: FormData): Promi
   await supabase.auth.updateUser({ data: { is_admin: true } });
   await supabase.auth.refreshSession();
 
-  redirect("/admin");
+  redirect("/admin/welcome");
 }
