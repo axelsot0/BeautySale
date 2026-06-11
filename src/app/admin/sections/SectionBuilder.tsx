@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import {
   ChevronUp, ChevronDown, Trash2, Eye, EyeOff,
-  Plus, Settings2, Loader2, Upload,
+  Plus, Settings2, Loader2, Upload, GripVertical,
 } from "lucide-react";
 import { SECTION_TYPES, sectionLabel } from "@/lib/sections";
 import { LinkPicker } from "@/components/admin/LinkPicker";
-import { addSection, deleteSection, toggleSection, moveSection, updateSection, uploadSectionImage } from "./actions";
+import { addSection, deleteSection, toggleSection, moveSection, updateSection, uploadSectionImage, reorderSections } from "./actions";
 import type { NewsletterConfig } from "@/lib/data/theme-query";
 
 type SectionRow = {
@@ -29,18 +29,48 @@ export function SectionBuilder({
   sections,
   categories,
   newsletterConfig,
+  onChanged,
 }: {
   sections: SectionRow[];
   categories: { slug: string; name: string }[];
   newsletterConfig: NewsletterConfig;
+  onChanged?: () => void;
 }) {
   const [addType, setAddType] = useState(SECTION_TYPES[0].type);
   const [adding, startAdd] = useTransition();
 
+  // Orden local para drag & drop con feedback inmediato
+  const [order, setOrder] = useState(() => sections.map((s) => s.id));
+  const [dragId, setDragId] = useState<string | null>(null);
+  useEffect(() => {
+    setOrder(sections.map((s) => s.id));
+  }, [sections]);
+
+  const byId = new Map(sections.map((s) => [s.id, s]));
+  const ordered = order.map((id) => byId.get(id)).filter(Boolean) as SectionRow[];
+
   function handleAdd(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    startAdd(() => addSection(fd));
+    startAdd(async () => {
+      await addSection(fd);
+      onChanged?.();
+    });
+  }
+
+  function handleDrop(targetId: string) {
+    if (!dragId || dragId === targetId) return;
+    const next = [...order];
+    const from = next.indexOf(dragId);
+    const to = next.indexOf(targetId);
+    if (from < 0 || to < 0) return;
+    next.splice(from, 1);
+    next.splice(to, 0, dragId);
+    setOrder(next);
+    setDragId(null);
+    const fd = new FormData();
+    fd.set("ids", JSON.stringify(next));
+    reorderSections(fd).then(() => onChanged?.());
   }
 
   return (
@@ -76,19 +106,29 @@ export function SectionBuilder({
       </div>
 
       {/* Stack */}
-      {sections.length === 0 ? (
+      {ordered.length === 0 ? (
         <p className="text-center text-plum-soft py-8">Sin secciones. Agregá la primera arriba.</p>
       ) : (
         <div className="space-y-3">
-          {sections.map((s, i) => (
-            <SectionCard
+          {ordered.map((s, i) => (
+            <div
               key={s.id}
-              section={s}
-              categories={categories}
-              newsletterConfig={newsletterConfig}
-              isFirst={i === 0}
-              isLast={i === sections.length - 1}
-            />
+              draggable
+              onDragStart={() => setDragId(s.id)}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={() => handleDrop(s.id)}
+              onDragEnd={() => setDragId(null)}
+              className={dragId === s.id ? "opacity-40" : ""}
+            >
+              <SectionCard
+                section={s}
+                categories={categories}
+                newsletterConfig={newsletterConfig}
+                isFirst={i === 0}
+                isLast={i === ordered.length - 1}
+                onChanged={onChanged}
+              />
+            </div>
           ))}
         </div>
       )}
@@ -107,12 +147,14 @@ function SectionCard({
   newsletterConfig,
   isFirst,
   isLast,
+  onChanged,
 }: {
   section: SectionRow;
   categories: { slug: string; name: string }[];
   newsletterConfig: NewsletterConfig;
   isFirst: boolean;
   isLast: boolean;
+  onChanged?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -125,6 +167,7 @@ function SectionCard({
     startTransition(async () => {
       await fn();
       setPendingAction(null);
+      onChanged?.();
     });
   }
 
@@ -161,6 +204,7 @@ function SectionCard({
   return (
     <div className={`rounded-2xl bg-white border ${section.active ? "border-plum/10" : "border-plum/5 opacity-60"}`}>
       <div className="flex items-center gap-3 px-4 py-3">
+        <GripVertical className="h-4 w-4 text-plum/30 cursor-grab shrink-0" />
         <div className="flex flex-col">
           <button
             onClick={() => handleMove("up")}

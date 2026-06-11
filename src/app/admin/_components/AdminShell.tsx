@@ -22,6 +22,7 @@ import {
   Lock,
   Sparkle,
   Crown,
+  Paintbrush,
 } from "lucide-react";
 import { logout } from "../login/actions";
 import { switchTenant } from "./tenant-switch";
@@ -37,6 +38,7 @@ const NAV = [
   { label: "Categorías", href: "/admin/categories", icon: Tag },
   { label: "Banners",    href: "/admin/banners",    icon: ImageIcon },
   { label: "Diseño",     href: "/admin/sections",   icon: Layers },
+  { label: "Editor",     href: "/admin/editor",     icon: Paintbrush },
   { label: "News",       href: "/admin/news",       icon: Megaphone },
   { label: "Flash Sale", href: "/admin/flash-sale", icon: Zap },
   { label: "Marcas",     href: "/admin/brands",     icon: Sparkles },

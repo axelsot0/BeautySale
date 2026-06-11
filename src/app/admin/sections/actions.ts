@@ -84,6 +84,34 @@ export async function moveSection(formData: FormData) {
   revalidate();
 }
 
+// Reordena todas las secciones según la lista de ids (drag & drop).
+export async function reorderSections(formData: FormData) {
+  const tenantId = await ensureAdmin();
+  let ids: string[];
+  try {
+    ids = JSON.parse(String(formData.get("ids") ?? "[]"));
+  } catch {
+    return;
+  }
+  if (!Array.isArray(ids) || ids.length === 0) return;
+
+  const supabase = createServiceClient();
+  // Solo ids que pertenecen al tenant (ignora inyectados)
+  const { data: own } = await supabase
+    .from("sections")
+    .select("id")
+    .eq("tenant_id", tenantId);
+  const ownSet = new Set((own ?? []).map((r) => r.id));
+
+  let pos = 0;
+  for (const id of ids) {
+    if (!ownSet.has(id)) continue;
+    await supabase.from("sections").update({ position: pos }).eq("id", id).eq("tenant_id", tenantId);
+    pos++;
+  }
+  revalidate();
+}
+
 export async function updateSection(formData: FormData) {
   const tenantId = await ensureAdmin();
   const id = String(formData.get("id") ?? "");

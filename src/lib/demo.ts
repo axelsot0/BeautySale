@@ -7,6 +7,7 @@ export const DEMO_LOCKED_PATHS = [
   "/admin/theme",
   "/admin/flash-sale",
   "/admin/sections",
+  "/admin/editor",
   "/admin/brands",
   "/admin/news",
   "/admin/admins",
