@@ -19,10 +19,13 @@ import {
   LogOut,
   Menu,
   X,
+  Lock,
+  Sparkle,
 } from "lucide-react";
 import { logout } from "../login/actions";
 import { switchTenant } from "./tenant-switch";
 import { cn } from "@/lib/utils";
+import { isPathLockedInDemo } from "@/lib/demo";
 
 type TenantOption = { id: number; name: string };
 
@@ -46,16 +49,21 @@ export function AdminShell({
   isDeveloper = false,
   tenants = [],
   currentTenantId = 0,
+  isDemo = false,
+  demoDaysLeft = null,
   children,
 }: {
   userEmail: string;
   isDeveloper?: boolean;
   tenants?: TenantOption[];
   currentTenantId?: number;
+  isDemo?: boolean;
+  demoDaysLeft?: number | null;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const locked = isDemo && isPathLockedInDemo(pathname);
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-cream">
@@ -81,6 +89,8 @@ export function AdminShell({
         isDeveloper={isDeveloper}
         tenants={tenants}
         currentTenantId={currentTenantId}
+        isDemo={isDemo}
+        demoDaysLeft={demoDaysLeft}
         className="hidden md:flex"
       />
 
@@ -93,13 +103,41 @@ export function AdminShell({
             isDeveloper={isDeveloper}
             tenants={tenants}
             currentTenantId={currentTenantId}
+            isDemo={isDemo}
+            demoDaysLeft={demoDaysLeft}
             className="absolute left-0 top-0 bottom-0 w-72"
             onClose={() => setOpen(false)}
           />
         </div>
       )}
 
-      <main className="flex-1 min-w-0 p-4 md:p-8 max-w-full">{children}</main>
+      <main className="flex-1 min-w-0 p-4 md:p-8 max-w-full">
+        {locked ? <LockedFeature /> : children}
+      </main>
+    </div>
+  );
+}
+
+function LockedFeature() {
+  return (
+    <div className="max-w-lg mx-auto mt-10 rounded-[28px] bg-white border border-plum/10 p-10 text-center space-y-4">
+      <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-pink/10">
+        <Lock className="h-7 w-7 text-pink" />
+      </div>
+      <h1 className="font-display text-3xl">Función premium</h1>
+      <p className="text-plum-soft">
+        Esta sección está disponible cuando activás tu tienda. En modo demo podés cargar
+        productos, categorías, tu hero y recibir pedidos.
+      </p>
+      <div className="rounded-2xl bg-butter/30 px-4 py-3 text-sm text-plum">
+        Escribinos para activar tu tienda y desbloquear tema, pagos, flash sales y más.
+      </div>
+      <a
+        href="/admin"
+        className="inline-flex items-center justify-center rounded-full bg-plum text-cream px-6 py-2.5 text-sm font-semibold hover:bg-pink transition"
+      >
+        Volver al panel
+      </a>
     </div>
   );
 }
@@ -110,6 +148,8 @@ function Sidebar({
   isDeveloper,
   tenants = [],
   currentTenantId = 0,
+  isDemo = false,
+  demoDaysLeft = null,
   className,
   onClose,
 }: {
@@ -118,9 +158,13 @@ function Sidebar({
   isDeveloper?: boolean;
   tenants?: TenantOption[];
   currentTenantId?: number;
+  isDemo?: boolean;
+  demoDaysLeft?: number | null;
   className?: string;
   onClose?: () => void;
 }) {
+  // In demo mode, hide premium sections from the nav entirely.
+  const navItems = isDemo ? NAV.filter((n) => !isPathLockedInDemo(n.href)) : NAV;
   return (
     <aside
       className={cn(
@@ -147,6 +191,19 @@ function Sidebar({
         Panel admin
       </span>
 
+      {isDemo && (
+        <div className="mb-4 rounded-2xl bg-butter/20 border border-butter/30 px-4 py-3 space-y-1">
+          <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-butter">
+            <Sparkle className="h-3.5 w-3.5" /> Modo demo
+          </p>
+          <p className="text-xs text-cream/70 leading-snug">
+            {demoDaysLeft != null
+              ? `Expira en ${demoDaysLeft} ${demoDaysLeft === 1 ? "día" : "días"}. Activá tu tienda para no perderla.`
+              : "Activá tu tienda para desbloquear todas las funciones."}
+          </p>
+        </div>
+      )}
+
       {isDeveloper && tenants.length > 0 && (
         <form action={switchTenant} className="mb-4">
           <label className="block text-[10px] font-bold uppercase tracking-widest text-cream/50 mb-1">
@@ -168,7 +225,7 @@ function Sidebar({
       )}
 
       <nav className="flex flex-col gap-1">
-        {NAV.map(({ label, href, icon: Icon }) => {
+        {navItems.map(({ label, href, icon: Icon }) => {
           const active =
             pathname === href || (href !== "/admin" && pathname.startsWith(href));
           return (

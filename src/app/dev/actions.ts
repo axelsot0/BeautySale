@@ -1,10 +1,13 @@
 "use server";
 
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getAdminUser } from "@/lib/auth";
-import { slugify } from "@/lib/utils";
+import { ADMIN_TENANT_COOKIE } from "@/lib/tenant-context";
+import { provisionStore, deleteTenantCascade } from "@/lib/provision";
 
 // Only the platform owner (role=developer) may provision stores.
 async function ensureDeveloper() {
@@ -46,77 +49,18 @@ export async function createSuperAdmin(_prev: DevState, formData: FormData): Pro
   }
 
   const { email, full_name, password, store_name } = parsed.data;
-  const slug = slugify(parsed.data.slug || store_name);
-  if (!slug) return { error: "Slug inválido" };
 
-  const supabase = createServiceClient();
-
-  // Slug must be free.
-  const { data: slugTaken } = await supabase
-    .from("tenants")
-    .select("id")
-    .eq("slug", slug)
-    .maybeSingle();
-  if (slugTaken) return { error: `El slug "${slug}" ya está en uso` };
-
-  // Email must not already be an admin/superadmin.
-  const { data: emailTaken } = await supabase
-    .from("admins")
-    .select("id")
-    .eq("email", email)
-    .maybeSingle();
-  if (emailTaken) return { error: "Ese email ya pertenece a una cuenta" };
-
-  // Create or reuse the auth user.
-  const { data: authList } = await supabase.auth.admin.listUsers();
-  let authUser = authList.users.find((u) => u.email?.toLowerCase() === email);
-  if (authUser) {
-    await supabase.auth.admin.updateUserById(authUser.id, {
-      password,
-      email_confirm: true,
-      user_metadata: { ...(authUser.user_metadata ?? {}), full_name, is_admin: true },
-    });
-  } else {
-    const { data, error } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { full_name, is_admin: true },
-    });
-    if (error || !data.user) return { error: `Auth error: ${error?.message ?? "unknown"}` };
-    authUser = data.user;
-  }
-
-  // Create the tenant owned by this superadmin.
-  const { data: tenant, error: tErr } = await supabase
-    .from("tenants")
-    .insert({ slug, name: store_name, owner_id: authUser.id, active: true, created_by: me.id })
-    .select("id")
-    .single();
-  if (tErr || !tenant) return { error: `No se pudo crear la tienda: ${tErr?.message ?? "?"}` };
-
-  // Authoritative claims on the JWT.
-  await supabase.auth.admin.updateUserById(authUser.id, {
-    app_metadata: {
-      ...(authUser.app_metadata ?? {}),
-      is_admin: true,
-      role: "superadmin",
-      tenant_id: tenant.id,
-      active: true,
-    },
-  });
-
-  // Membership row.
-  const { error: mErr } = await supabase.from("admins").insert({
-    user_id: authUser.id,
+  // Developer-created stores are official (not demo) from the start.
+  const result = await provisionStore({
     email,
     full_name,
-    role: "superadmin",
-    tenant_id: tenant.id,
-    active: true,
-    created_by: me.id,
+    password,
+    store_name,
+    slug: parsed.data.slug,
+    isDemo: false,
+    createdBy: me.id,
   });
-  if (mErr) return { error: `No se pudo crear la membresía: ${mErr.message}` };
+  if (!result.ok) return { error: result.error };
 
   revalidatePath("/dev");
   return { ok: true };
@@ -135,4 +79,39 @@ export async function setTenantActive(formData: FormData) {
   await supabase.from("admins").update({ active }).eq("tenant_id", id).neq("role", "developer");
 
   revalidatePath("/dev");
+}
+
+// Promote a demo store to an official one: clears the demo flag + expiry so it
+// is no longer feature-gated nor auto-deleted.
+export async function promoteTenant(formData: FormData) {
+  await ensureDeveloper();
+  const id = Number(formData.get("id"));
+  if (!id) return;
+
+  const supabase = createServiceClient();
+  await supabase
+    .from("tenants")
+    .update({ is_demo: false, demo_expires_at: null, active: true })
+    .eq("id", id);
+  await supabase.from("admins").update({ active: true }).eq("tenant_id", id).neq("role", "developer");
+
+  revalidatePath("/dev");
+}
+
+// Permanently delete a store and its data (cascade) + auth users.
+export async function deleteTenant(formData: FormData) {
+  await ensureDeveloper();
+  const id = Number(formData.get("id"));
+  if (!id) return;
+  await deleteTenantCascade(id);
+  revalidatePath("/dev");
+}
+
+// Developer: open a store's admin panel by setting the tenant-view cookie.
+export async function enterStore(formData: FormData) {
+  await ensureDeveloper();
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  (await cookies()).set(ADMIN_TENANT_COOKIE, id, { path: "/", sameSite: "lax" });
+  redirect("/admin");
 }

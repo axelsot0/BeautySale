@@ -30,15 +30,19 @@ export async function proxy(request: NextRequest) {
   const tenantMatch = pathname.match(/^\/t\/([^/]+)(\/.*)?$/);
   if (tenantMatch) {
     const slug = tenantMatch[1].toLowerCase();
-    const rest = tenantMatch[2] || "/";
+    const rest = tenantMatch[2] || "/store";
     const { data: tenant } = await supabase
       .from("tenants")
-      .select("slug, active")
+      .select("slug, active, is_demo, demo_expires_at")
       .eq("slug", slug)
       .maybeSingle();
 
     const url = request.nextUrl.clone();
-    if (!tenant || tenant.active === false) {
+    const demoExpired =
+      tenant?.is_demo === true &&
+      tenant.demo_expires_at != null &&
+      new Date(tenant.demo_expires_at).getTime() < Date.now();
+    if (!tenant || tenant.active === false || demoExpired) {
       url.pathname = "/store-unavailable";
       return NextResponse.rewrite(url);
     }

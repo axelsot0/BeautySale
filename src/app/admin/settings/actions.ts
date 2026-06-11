@@ -3,13 +3,25 @@
 import { revalidatePath } from "next/cache";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getAdminUser } from "@/lib/auth";
-import { getAdminTenantId } from "@/lib/tenant-context";
+import { getAdminMembership, getAdminTenantId } from "@/lib/tenant-context";
+import { getTenantStatus } from "@/lib/demo-server";
 
 async function ensureAdmin(): Promise<number> {
   const u = await getAdminUser();
   if (!u) throw new Error("unauthorized");
   return getAdminTenantId();
 }
+
+// Premium gate: true if this store is a (non-developer) demo store. Used to
+// block premium-only settings (payments, nav, footer, newsletter).
+async function isDemoStore(tenantId: number): Promise<boolean> {
+  const m = await getAdminMembership();
+  if (m?.role === "developer") return false;
+  const { isDemo } = await getTenantStatus(tenantId);
+  return isDemo;
+}
+
+const DEMO_BLOCKED: SettingsState = { error: "Disponible al activar tu tienda." };
 
 export type SettingsState = { ok?: boolean; error?: string };
 
@@ -25,6 +37,7 @@ export async function savePayPal(
   formData: FormData,
 ): Promise<SettingsState> {
   const tenantId = await ensureAdmin();
+  if (await isDemoStore(tenantId)) return DEMO_BLOCKED;
 
   const clientId    = String(formData.get("paypal_client_id") ?? "").trim();
   const secretInput = String(formData.get("paypal_secret") ?? "").trim();
@@ -107,6 +120,7 @@ export async function saveNavLinks(
   formData: FormData,
 ): Promise<SettingsState> {
   const tenantId = await ensureAdmin();
+  if (await isDemoStore(tenantId)) return DEMO_BLOCKED;
   let links: unknown;
   try {
     links = JSON.parse(String(formData.get("nav_links") ?? "[]"));
@@ -129,6 +143,7 @@ export async function saveFooterConfig(
   formData: FormData,
 ): Promise<SettingsState> {
   const tenantId = await ensureAdmin();
+  if (await isDemoStore(tenantId)) return DEMO_BLOCKED;
 
   let contact: unknown, nosotros: unknown, payments: unknown;
   try {
@@ -160,6 +175,7 @@ export async function saveWhatsappCheckout(
   formData: FormData,
 ): Promise<SettingsState> {
   const tenantId = await ensureAdmin();
+  if (await isDemoStore(tenantId)) return DEMO_BLOCKED;
   const number = String(formData.get("whatsapp_checkout") ?? "").trim();
   const supabase = createServiceClient();
   const { error } = await supabase
@@ -178,6 +194,7 @@ export async function saveNewsletterSettings(
   formData: FormData,
 ): Promise<SettingsState> {
   const tenantId = await ensureAdmin();
+  if (await isDemoStore(tenantId)) return DEMO_BLOCKED;
 
   const title    = String(formData.get("newsletter_title")    ?? "").trim() || null;
   const subtitle = String(formData.get("newsletter_subtitle") ?? "").trim() || null;

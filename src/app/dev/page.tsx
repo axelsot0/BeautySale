@@ -1,15 +1,25 @@
 import { createServiceClient } from "@/lib/supabase/service";
-import { setTenantActive } from "./actions";
+import { setTenantActive, promoteTenant, deleteTenant, enterStore } from "./actions";
 import { CreateSuperAdminForm } from "./CreateSuperAdminForm";
-import { Store, ExternalLink } from "lucide-react";
+import { Store, ExternalLink, LogIn, Rocket, Trash2 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function demoDaysLeft(expires: string | null): number | null {
+  if (!expires) return null;
+  return Math.max(0, Math.ceil((new Date(expires).getTime() - Date.now()) / DAY_MS));
+}
 
 export default async function DevPage() {
   const supabase = createServiceClient();
 
   const [{ data: tenants }, { data: members }] = await Promise.all([
-    supabase.from("tenants").select("id, slug, name, active, owner_id").order("id", { ascending: true }),
+    supabase
+      .from("tenants")
+      .select("id, slug, name, active, owner_id, is_demo, demo_expires_at")
+      .order("id", { ascending: true }),
     supabase.from("admins").select("email, role, tenant_id"),
   ]);
 
@@ -29,59 +39,108 @@ export default async function DevPage() {
       </header>
 
       <div className="space-y-3">
-        {(tenants ?? []).map((t) => (
-          <div
-            key={t.id}
-            className="flex flex-wrap items-center gap-4 rounded-2xl bg-cream/5 border border-cream/10 px-5 py-4"
-          >
-            <div className="grid h-10 w-10 place-items-center rounded-full bg-pink/20 shrink-0">
-              <Store className="h-5 w-5 text-pink" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <p className="font-semibold truncate">{t.name}</p>
-                <span
-                  className={`text-[10px] font-bold uppercase tracking-widest rounded-full px-2 py-0.5 ${
-                    t.active ? "bg-mint/20 text-mint" : "bg-cream/10 text-cream/50"
-                  }`}
-                >
-                  {t.active ? "activa" : "inactiva"}
-                </span>
-              </div>
-              <p className="text-sm text-cream/60 truncate">
-                /{t.slug} · {ownerByTenant.get(t.id) ?? "sin dueño"} · {countByTenant.get(t.id) ?? 0} usuarios
-              </p>
-            </div>
-
-            <a
-              href={`/t/${t.slug}`}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-cream/70 hover:text-pink"
+        {(tenants ?? []).map((t) => {
+          const isDemo = t.is_demo === true;
+          const daysLeft = isDemo ? demoDaysLeft(t.demo_expires_at as string | null) : null;
+          const expired = isDemo && daysLeft === 0;
+          return (
+            <div
+              key={t.id}
+              className="flex flex-wrap items-center gap-4 rounded-2xl bg-cream/5 border border-cream/10 px-5 py-4"
             >
-              <ExternalLink className="h-3.5 w-3.5" />
-              ver
-            </a>
+              <div className="grid h-10 w-10 place-items-center rounded-full bg-pink/20 shrink-0">
+                <Store className="h-5 w-5 text-pink" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="font-semibold truncate">{t.name}</p>
+                  {isDemo ? (
+                    <span className={`text-[10px] font-bold uppercase tracking-widest rounded-full px-2 py-0.5 ${
+                      expired ? "bg-pink/30 text-pink" : "bg-butter/20 text-butter"
+                    }`}>
+                      {expired ? "demo vencida" : `demo · ${daysLeft}d`}
+                    </span>
+                  ) : (
+                    <span className={`text-[10px] font-bold uppercase tracking-widest rounded-full px-2 py-0.5 ${
+                      t.active ? "bg-mint/20 text-mint" : "bg-cream/10 text-cream/50"
+                    }`}>
+                      {t.active ? "activa" : "inactiva"}
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm text-cream/60 truncate">
+                  /{t.slug} · {ownerByTenant.get(t.id) ?? "sin dueño"} · {countByTenant.get(t.id) ?? 0} usuarios
+                </p>
+              </div>
 
-            <form action={setTenantActive}>
-              <input type="hidden" name="id" value={t.id} />
-              <input type="hidden" name="active" value={(!t.active).toString()} />
-              <button
-                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
-                  t.active
-                    ? "bg-cream/10 hover:bg-pink hover:text-cream"
-                    : "bg-mint text-plum hover:opacity-90"
-                }`}
+              {/* Enter admin */}
+              <form action={enterStore}>
+                <input type="hidden" name="id" value={t.id} />
+                <button className="inline-flex items-center gap-1.5 rounded-full bg-cream/10 px-3 py-2 text-xs font-semibold hover:bg-pink hover:text-cream transition">
+                  <LogIn className="h-3.5 w-3.5" />
+                  Entrar
+                </button>
+              </form>
+
+              {/* View storefront */}
+              <a
+                href={`/t/${t.slug}`}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-cream/70 hover:text-pink"
               >
-                {t.active ? "Desactivar" : "Activar"}
-              </button>
-            </form>
-          </div>
-        ))}
+                <ExternalLink className="h-3.5 w-3.5" />
+                ver
+              </a>
+
+              {/* Promote demo -> official */}
+              {isDemo && (
+                <form action={promoteTenant}>
+                  <input type="hidden" name="id" value={t.id} />
+                  <button className="inline-flex items-center gap-1.5 rounded-full bg-mint text-plum px-4 py-2 text-xs font-semibold hover:opacity-90 transition">
+                    <Rocket className="h-3.5 w-3.5" />
+                    Activar tienda
+                  </button>
+                </form>
+              )}
+
+              {/* Activate / deactivate (official stores) */}
+              {!isDemo && (
+                <form action={setTenantActive}>
+                  <input type="hidden" name="id" value={t.id} />
+                  <input type="hidden" name="active" value={(!t.active).toString()} />
+                  <button
+                    className={`rounded-full px-4 py-2 text-xs font-semibold transition ${
+                      t.active
+                        ? "bg-cream/10 hover:bg-pink hover:text-cream"
+                        : "bg-mint text-plum hover:opacity-90"
+                    }`}
+                  >
+                    {t.active ? "Desactivar" : "Activar"}
+                  </button>
+                </form>
+              )}
+
+              {/* Delete demo stores */}
+              {isDemo && (
+                <form action={deleteTenant}>
+                  <input type="hidden" name="id" value={t.id} />
+                  <button
+                    aria-label="Eliminar tienda demo"
+                    className="grid h-9 w-9 place-items-center rounded-full text-cream/50 hover:bg-pink/20 hover:text-pink transition"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </form>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       <section className="rounded-2xl bg-cream/5 border border-cream/10 p-6">
         <h2 className="font-display text-2xl mb-1">Nueva tienda</h2>
         <p className="text-cream/60 text-sm mb-5">
-          Crea un superAdmin con su tienda. Podrá entrar a /admin y gestionar su catálogo.
+          Crea un superAdmin con su tienda (oficial, sin modo demo). Podrá entrar a /admin y
+          gestionar su catálogo.
         </p>
         <CreateSuperAdminForm />
       </section>
