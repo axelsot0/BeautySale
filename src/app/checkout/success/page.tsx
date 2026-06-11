@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { CheckCircle, Loader2 } from "lucide-react";
+import { CheckCircle, Loader2, MessageCircle } from "lucide-react";
 import { useCartStore } from "@/lib/cart/store";
 
 type Status = "loading" | "success" | "error";
@@ -23,19 +23,23 @@ function SuccessContent() {
   const params = useSearchParams();
   const orderId = params.get("orderId");
   const paypalOrderId = params.get("token");
+  const via = params.get("via"); // "whatsapp" | null
   const { clear } = useCartStore();
 
-  const [status, setStatus] = useState<Status>("loading");
+  const [status, setStatus] = useState<Status>(via === "whatsapp" ? "success" : "loading");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // WhatsApp flow: cart already cleared in CheckoutClient, show success directly
+    if (via === "whatsapp") return;
+
     if (!orderId || !paypalOrderId) {
       setStatus("error");
       setError("Parámetros de pago inválidos.");
       return;
     }
 
-    // Capture the payment
+    // Capture the PayPal payment
     fetch("/api/checkout/capture", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -44,7 +48,7 @@ function SuccessContent() {
       .then((r) => r.json())
       .then((data) => {
         if (data.success) {
-          clear(); // clear cart only after confirmed payment
+          clear();
           setStatus("success");
         } else {
           setStatus("error");
@@ -55,7 +59,7 @@ function SuccessContent() {
         setStatus("error");
         setError("Error de conexión al confirmar el pago.");
       });
-  }, [orderId, paypalOrderId]);
+  }, [orderId, paypalOrderId, via]);
 
   return (
     <main className="min-h-screen bg-cream flex items-center justify-center px-4">
@@ -72,7 +76,32 @@ function SuccessContent() {
           </div>
         )}
 
-        {status === "success" && (
+        {status === "success" && via === "whatsapp" && (
+          <div className="rounded-[24px] bg-white border border-[#25D366]/20 p-10 space-y-5">
+            <div className="h-16 w-16 rounded-full bg-[#25D366]/10 flex items-center justify-center mx-auto">
+              <MessageCircle className="h-9 w-9 text-[#25D366]" />
+            </div>
+            <div>
+              <h1 className="font-display text-3xl">¡Pedido registrado!</h1>
+              <p className="text-plum-soft mt-2 text-sm">
+                Se abrio WhatsApp con el resumen de tu pedido. Envialo para coordinar el pago con la tienda.
+              </p>
+            </div>
+            {orderId && (
+              <p className="text-xs text-plum-soft bg-plum/5 rounded-xl px-3 py-2">
+                Pedido: <span className="font-mono">#{orderId.slice(0, 8).toUpperCase()}</span>
+              </p>
+            )}
+            <a
+              href="/"
+              className="block rounded-full bg-[#25D366] px-6 py-3 font-bold text-white hover:opacity-90 transition"
+            >
+              Seguir comprando
+            </a>
+          </div>
+        )}
+
+        {status === "success" && via !== "whatsapp" && (
           <div className="rounded-[24px] bg-white border border-plum/5 p-10 space-y-5">
             <CheckCircle className="h-16 w-16 text-mint mx-auto" />
             <div>

@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { ArrowLeft, MapPin, Mail, User, Calendar, Package } from "lucide-react";
+import { ArrowLeft, MapPin, Mail, User, Calendar, Package, MessageCircle, CreditCard } from "lucide-react";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getAdminTenantId } from "@/lib/tenant-context";
 import { formatPrice } from "@/lib/utils";
@@ -13,6 +13,7 @@ const STATUS_OPTIONS = [
   { value: "shipped",   label: "Enviado",    color: "bg-lavender text-cream" },
   { value: "delivered", label: "Entregado",  color: "bg-plum text-cream" },
   { value: "cancelled", label: "Cancelado",  color: "bg-plum/10 text-plum/60" },
+  { value: "declined",  label: "Declinado", color: "bg-plum/10 text-plum/60" },
   { value: "failed",    label: "Fallido",    color: "bg-pink text-cream" },
 ];
 
@@ -174,12 +175,25 @@ export default async function OrderDetailPage({
         </div>
       </div>
 
-      {/* PayPal info */}
-      {order.paypal_order_id && (
-        <div className="rounded-2xl bg-plum/5 px-4 py-3 text-xs text-plum-soft">
-          PayPal Order ID: <span className="font-mono">{order.paypal_order_id}</span>
-        </div>
-      )}
+      {/* Payment source info */}
+      <div className="rounded-2xl bg-plum/5 px-4 py-3 text-xs text-plum-soft flex items-center gap-2">
+        {order.source === "whatsapp" ? (
+          <>
+            <MessageCircle className="h-4 w-4 text-[#25D366]" />
+            <span>Pedido recibido por <strong>WhatsApp</strong>. El pago se coordina fuera de la plataforma.</span>
+          </>
+        ) : (
+          <>
+            <CreditCard className="h-4 w-4" />
+            <span>
+              Pago via PayPal
+              {order.paypal_order_id && (
+                <> — Order ID: <span className="font-mono">{order.paypal_order_id}</span></>
+              )}
+            </span>
+          </>
+        )}
+      </div>
     </div>
   );
 }

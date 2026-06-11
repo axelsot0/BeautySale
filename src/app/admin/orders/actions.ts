@@ -5,7 +5,7 @@ import { z } from "zod";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getAdminUser } from "@/lib/auth";
 
-const STATUSES = ["pending", "paid", "shipped", "delivered", "cancelled", "failed"] as const;
+const STATUSES = ["pending", "paid", "shipped", "delivered", "cancelled", "declined", "failed"] as const;
 export type OrderStatus = (typeof STATUSES)[number];
 
 const schema = z.object({
