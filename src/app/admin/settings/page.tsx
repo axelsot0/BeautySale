@@ -2,45 +2,106 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { getAdminTenantId } from "@/lib/tenant-context";
 import { parseSocialLinks } from "@/lib/social";
 import { DEFAULT_SITE_NAME } from "@/lib/theme";
+import { getActiveTheme, getFooterConfig, getNewsletterConfig } from "@/lib/data/theme-query";
 import { PayPalForm } from "./PayPalForm";
 import { SiteSettingsForm } from "./SiteSettingsForm";
+import { NavLinksForm } from "./NavLinksForm";
+import { FooterSettingsForm } from "./FooterSettingsForm";
+import { NewsletterSettingsForm } from "./NewsletterSettingsForm";
+import { WhatsAppCheckoutForm } from "./WhatsAppCheckoutForm";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminSettingsPage() {
   const supabase = createServiceClient();
   const tenantId = await getAdminTenantId();
-  const { data } = await supabase
-    .from("tenants")
-    .select("paypal_client_id, paypal_secret, paypal_mode, site_name, social_links")
-    .eq("id", tenantId)
-    .single();
+
+  const [{ data }, theme, footer, newsletter] = await Promise.all([
+    supabase
+      .from("tenants")
+      .select("paypal_client_id, paypal_secret, paypal_mode, site_name, social_links, whatsapp_checkout")
+      .eq("id", tenantId)
+      .single(),
+    getActiveTheme(tenantId),
+    getFooterConfig(tenantId),
+    getNewsletterConfig(tenantId),
+  ]);
 
   const siteName = (data?.site_name as string | null)?.trim() || DEFAULT_SITE_NAME;
-  const social = parseSocialLinks(data?.social_links);
+  const social   = parseSocialLinks(data?.social_links);
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-8 max-w-3xl">
       <header>
         <p className="text-sm font-bold uppercase tracking-widest text-pink">ajustes</p>
         <h1 className="font-display text-4xl mt-1">Ajustes de tienda</h1>
         <p className="text-plum-soft mt-1">
-          Nombre, redes (footer) y cobros. El footer muestra estas redes y el copyright con el nombre.
+          Nombre, navegación, footer, newsletter y cobros.
         </p>
       </header>
 
+      {/* Nombre + Redes */}
       <SiteSettingsForm siteName={siteName} social={social} />
 
-      <section className="space-y-2">
-        <h2 className="font-display text-2xl">Pagos</h2>
-        <p className="text-plum-soft text-sm">
-          Conectá tu PayPal Business. Vacío = credenciales por defecto del sistema.
+      {/* Menú de navegación */}
+      <section className="rounded-3xl border border-plum/10 bg-white p-6 space-y-3">
+        <h2 className="font-display text-2xl">Menú de navegación</h2>
+        <p className="text-sm text-plum-soft">
+          Los enlaces del header. ★ = destacado (color accent). Sin cambios = menú por defecto.
         </p>
-        <PayPalForm
-          clientId={(data?.paypal_client_id as string | null) ?? ""}
-          mode={(data?.paypal_mode as string | null) === "live" ? "live" : "sandbox"}
-          hasSecret={Boolean(data?.paypal_secret)}
-        />
+        <NavLinksForm links={theme.navLinks} />
+      </section>
+
+      {/* Footer */}
+      <section className="rounded-3xl border border-plum/10 bg-white p-6 space-y-4">
+        <h2 className="font-display text-2xl">Footer</h2>
+        <p className="text-sm text-plum-soft">
+          Descripción, columnas de links y métodos de pago. La columna Categorías se llena
+          automáticamente desde las categorías que creaste.
+        </p>
+        <FooterSettingsForm config={footer} />
+      </section>
+
+      {/* Newsletter */}
+      <NewsletterSettingsForm config={newsletter} />
+
+      {/* Pagos */}
+      <section className="space-y-6">
+        <div>
+          <h2 className="font-display text-2xl">Pagos</h2>
+          <p className="text-plum-soft text-sm mt-1">
+            Configura los metodos de cobro disponibles en el checkout.
+          </p>
+        </div>
+
+        {/* PayPal */}
+        <div className="rounded-3xl border border-plum/10 bg-white p-6 space-y-3">
+          <h3 className="font-display text-lg">PayPal</h3>
+          <p className="text-sm text-plum-soft">
+            Conecta tu PayPal Business. Vacio = credenciales del sistema.
+          </p>
+          <PayPalForm
+            clientId={(data?.paypal_client_id as string | null) ?? ""}
+            mode={(data?.paypal_mode as string | null) === "live" ? "live" : "sandbox"}
+            hasSecret={Boolean(data?.paypal_secret)}
+          />
+        </div>
+
+        {/* WhatsApp checkout */}
+        <div className="rounded-3xl border border-[#25D366]/30 bg-white p-6 space-y-3">
+          <h3 className="font-display text-lg flex items-center gap-2">
+            <span className="inline-block h-3 w-3 rounded-full bg-[#25D366]" />
+            WhatsApp
+          </h3>
+          <p className="text-sm text-plum-soft">
+            El cliente llena el checkout y envia su pedido por WhatsApp. El pago se
+            coordina fuera de la plataforma; vos marcas el pedido como Pagado o Declinado
+            desde Admin → Pedidos.
+          </p>
+          <WhatsAppCheckoutForm
+            currentNumber={(data?.whatsapp_checkout as string | null) ?? ""}
+          />
+        </div>
       </section>
     </div>
   );

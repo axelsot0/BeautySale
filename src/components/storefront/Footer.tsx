@@ -1,11 +1,12 @@
+import { cookies } from "next/headers";
 import { Mail } from "lucide-react";
-import { getSocialLinks } from "@/lib/data/queries";
-import { getActiveTheme } from "@/lib/data/theme-query";
+import { getActiveTheme, getFooterConfig, getNewsletterConfig } from "@/lib/data/theme-query";
 import { getStorefrontTenantId } from "@/lib/tenant-context";
+import { TENANT_COOKIE } from "@/lib/tenant-cookie";
+import { getCategories, getSocialLinks } from "@/lib/data/queries";
 import { SOCIAL_NETWORKS, socialHref, type SocialKey } from "@/lib/social";
 import { NewsletterForm } from "./NewsletterForm";
 
-// Brand icons (lucide-react v1 removed brand icons for legal reasons; using inline SVGs).
 function InstagramIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -42,42 +43,31 @@ function WhatsAppIcon(props: React.SVGProps<SVGSVGElement>) {
 
 const SOCIAL_ICONS: Record<SocialKey, { icon: React.FC<React.SVGProps<SVGSVGElement>>; hover: string }> = {
   instagram: { icon: InstagramIcon, hover: "hover:bg-pink" },
-  tiktok: { icon: TikTokIcon, hover: "hover:bg-mint hover:text-plum" },
-  whatsapp: { icon: WhatsAppIcon, hover: "hover:bg-mint hover:text-plum" },
-  facebook: { icon: FacebookIcon, hover: "hover:bg-lavender hover:text-plum" },
-  email: { icon: Mail, hover: "hover:bg-butter hover:text-plum" },
-};
-
-const FOOTER_NAV = {
-  categorias: [
-    { label: "Cuidado personal", href: "/c/cuidado-personal" },
-    { label: "Ojos", href: "/c/ojos" },
-    { label: "Labios", href: "/c/labios" },
-    { label: "Rostro", href: "/c/rostro" },
-    { label: "Cabello", href: "/c/cabello" },
-    { label: "Ofertas 🔥", href: "/ofertas", highlight: true },
-  ],
-  contacto: [
-    { label: "Centro de ayuda", href: "/ayuda" },
-    { label: "Envíos y entregas", href: "/envios" },
-    { label: "Cambios y devoluciones", href: "/devoluciones" },
-    { label: "Seguimiento de pedido", href: "/seguimiento" },
-    { label: "WhatsApp", href: "https://wa.me/" },
-    { label: "hola@beautysale.shop", href: "mailto:hola@beautysale.shop" },
-  ],
-  nosotros: [
-    { label: "Sobre BeautySale", href: "/sobre" },
-    { label: "Blog & rituales", href: "/blog" },
-    { label: "Trabajá con nosotros", href: "/trabaja-con-nosotros" },
-    { label: "Términos y condiciones", href: "/terminos" },
-    { label: "Privacidad", href: "/privacidad" },
-  ],
+  tiktok:    { icon: TikTokIcon,    hover: "hover:bg-mint hover:text-plum" },
+  whatsapp:  { icon: WhatsAppIcon,  hover: "hover:bg-mint hover:text-plum" },
+  facebook:  { icon: FacebookIcon,  hover: "hover:bg-lavender hover:text-plum" },
+  email:     { icon: Mail,          hover: "hover:bg-butter hover:text-plum" },
 };
 
 export async function Footer() {
   const t = await getStorefrontTenantId();
-  const [social, { siteName }] = await Promise.all([getSocialLinks(t), getActiveTheme(t)]);
+  const cookieStore = await cookies();
+  const tenantSlug = cookieStore.get(TENANT_COOKIE)?.value;
+  const homeHref = tenantSlug ? `/t/${tenantSlug}` : "/";
+
+  const [theme, social, footer, newsletter, categories] = await Promise.all([
+    getActiveTheme(t),
+    getSocialLinks(t),
+    getFooterConfig(t),
+    getNewsletterConfig(t),
+    getCategories(t),
+  ]);
+
+  const { siteName, logoUrl } = theme;
   const activeSocials = SOCIAL_NETWORKS.filter((n) => social[n.key].active && social[n.key].url.trim());
+
+  // Render newsletter title: keep "Glow Squad" italic if present, otherwise wrap whole title
+  const hasGlow = newsletter.title.includes("Glow Squad");
 
   return (
     <footer className="relative overflow-hidden bg-plum text-cream mt-12">
@@ -85,28 +75,43 @@ export async function Footer() {
       <div className="absolute -bottom-32 -left-20 h-96 w-96 rounded-full bg-lavender/20 blur-3xl" />
 
       <div className="relative max-w-7xl mx-auto px-4 md:px-8 pt-12 md:pt-20 pb-8">
+        {/* Newsletter block */}
         <div className="rounded-[28px] bg-cream/5 backdrop-blur border border-cream/10 p-6 md:p-10 mb-12 md:mb-16">
           <div className="grid md:grid-cols-2 gap-6 items-center">
             <div>
               <h2 className="font-display text-3xl md:text-5xl leading-tight">
-                Sumate al <span className="italic text-pink">Glow Squad</span> 💌
+                {hasGlow ? (
+                  <>
+                    {newsletter.title.replace("Glow Squad", "").trim()}{" "}
+                    <span className="italic text-pink">Glow Squad</span> 💌
+                  </>
+                ) : (
+                  <span className="italic text-pink">{newsletter.title}</span>
+                )}
               </h2>
-              <p className="text-cream/70 mt-2 max-w-md">
-                10% off en tu primera compra + tips de belleza, lanzamientos y mimos.
-              </p>
+              <p className="text-cream/70 mt-2 max-w-md">{newsletter.subtitle}</p>
             </div>
-            <NewsletterForm />
+            <NewsletterForm
+              title={newsletter.title}
+              subtitle={newsletter.subtitle}
+              discountPct={newsletter.discountPct}
+            />
           </div>
         </div>
 
+        {/* Main footer grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
+          {/* Brand column */}
           <div className="col-span-2 md:col-span-1 space-y-4">
-            <a href="/" className="font-display text-3xl block">
-              {siteName}
+            <a href={homeHref} className="block">
+              {logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={logoUrl} alt={siteName} className="h-10 w-auto object-contain brightness-0 invert" />
+              ) : (
+                <span className="font-display text-3xl">{siteName}</span>
+              )}
             </a>
-            <p className="text-sm text-cream/70 max-w-xs">
-              Productos de belleza, cuidado personal y accesorios. Hechos con cariño.
-            </p>
+            <p className="text-sm text-cream/70 max-w-xs">{footer.description}</p>
             {activeSocials.length > 0 && (
               <div className="flex items-center gap-2">
                 {activeSocials.map((n) => {
@@ -128,46 +133,66 @@ export async function Footer() {
             )}
           </div>
 
-          {(
-            [
-              ["Categorías", FOOTER_NAV.categorias],
-              ["Contacto", FOOTER_NAV.contacto],
-              ["Nosotros", FOOTER_NAV.nosotros],
-            ] as const
-          ).map(([title, items]) => (
-            <div key={title}>
-              <h4 className="font-display text-lg mb-4">{title}</h4>
+          {/* Categorías (from DB) */}
+          {categories.length > 0 && (
+            <div>
+              <h4 className="font-display text-lg mb-4">Categorías</h4>
               <ul className="space-y-2">
-                {items.map((item) => (
-                  <li key={item.href}>
-                    <a
-                      href={item.href}
-                      className={`text-sm hover:text-pink transition ${
-                        "highlight" in item && item.highlight
-                          ? "text-pink font-semibold"
-                          : "text-cream/70"
-                      }`}
-                    >
+                {categories.map((cat) => (
+                  <li key={cat.slug}>
+                    <a href={`/c/${cat.slug}`} className="text-sm text-cream/70 hover:text-pink transition">
+                      {cat.name}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Contacto */}
+          {footer.contact.length > 0 && (
+            <div>
+              <h4 className="font-display text-lg mb-4">Contacto</h4>
+              <ul className="space-y-2">
+                {footer.contact.map((item) => (
+                  <li key={`${item.label}-${item.href}`}>
+                    <a href={item.href} className="text-sm text-cream/70 hover:text-pink transition">
                       {item.label}
                     </a>
                   </li>
                 ))}
               </ul>
             </div>
-          ))}
+          )}
+
+          {/* Nosotros */}
+          {footer.nosotros.length > 0 && (
+            <div>
+              <h4 className="font-display text-lg mb-4">Nosotros</h4>
+              <ul className="space-y-2">
+                {footer.nosotros.map((item) => (
+                  <li key={`${item.label}-${item.href}`}>
+                    <a href={item.href} className="text-sm text-cream/70 hover:text-pink transition">
+                      {item.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
 
+        {/* Bottom bar */}
         <div className="mt-12 pt-6 border-t border-cream/10 flex flex-col md:flex-row gap-4 items-center justify-between">
-          <div className="flex flex-wrap items-center gap-2 text-xs text-cream/60">
-            {["Visa", "Mastercard", "PayPal", "Mercado Pago", "Amex"].map((p) => (
-              <span
-                key={p}
-                className="rounded-full bg-cream/10 px-3 py-1.5 font-semibold tracking-wider"
-              >
-                {p}
-              </span>
-            ))}
-          </div>
+          {footer.payments.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 text-xs text-cream/60">
+              {footer.payments.map((p) => (
+                <span key={p} className="rounded-full bg-cream/10 px-3 py-1.5 font-semibold tracking-wider">
+                  {p}
+                </span>
+              ))}
+            </div>
+          )}
           <p className="text-xs text-cream/50">
             © {new Date().getFullYear()} {siteName}. Hecho con 💖.
           </p>

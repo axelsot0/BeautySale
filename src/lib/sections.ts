@@ -9,12 +9,12 @@ export type SectionType =
   | "newsletter";
 
 export const SECTION_TYPES: { type: SectionType; label: string; desc: string }[] = [
-  { type: "banner", label: "Banner / CTA", desc: "Imagen, título, subtítulo y botón" },
+  { type: "banner",           label: "Banner / CTA",         desc: "Imagen, título, subtítulo y botón" },
   { type: "product_carousel", label: "Carrusel de productos", desc: "Fila de productos por categoría o destacados" },
-  { type: "mosaic", label: "Mosaico", desc: "Grilla de banners editoriales" },
-  { type: "flash_sale", label: "Flash sale", desc: "Banner de oferta con cuenta regresiva" },
-  { type: "brand_strip", label: "Tira de marcas", desc: "Marquesina de marcas" },
-  { type: "newsletter", label: "Newsletter", desc: "Captura de email con código de descuento" },
+  { type: "mosaic",           label: "Mosaico",               desc: "Grilla de banners editoriales" },
+  { type: "flash_sale",       label: "Flash sale",            desc: "Banner de oferta con cuenta regresiva" },
+  { type: "brand_strip",      label: "Tira de marcas",        desc: "Marquesina de marcas" },
+  { type: "newsletter",       label: "Newsletter",            desc: "Bloque de suscripción con código de descuento" },
 ];
 
 export function sectionLabel(type: string): string {
@@ -39,7 +39,7 @@ export type SectionConfig = {
 export function defaultConfig(type: SectionType): SectionConfig {
   switch (type) {
     case "banner":
-      return { title: "Nueva promo", subtitle: "", cta_label: "Comprar", cta_link: "/productos", bg_color: "#FF4D8B" };
+      return { title: "Nueva promo", subtitle: "", cta_label: "Ver más", cta_link: "/productos", bg_color: "#FF4D8B" };
     case "product_carousel":
       return { source: "featured", eyebrow: "destacados", title: "Lo más vendido" };
     case "mosaic":

@@ -26,12 +26,20 @@ type State =
 
 const ERROR_MESSAGES: Record<string, string> = {
   already_subscribed: "Este correo ya está registrado. Revisa tu bandeja de entrada.",
-  already_claimed: "Ya recibiste tu código de bienvenida en este dispositivo.",
-  invalid_email: "Ingresá un correo válido.",
-  server_error: "Ocurrió un error. Intentá de nuevo en un momento.",
+  already_claimed:    "Ya recibiste tu código de bienvenida en este dispositivo.",
+  invalid_email:      "Ingresá un correo válido.",
+  server_error:       "Ocurrió un error. Intentá de nuevo en un momento.",
 };
 
-export function NewsletterForm() {
+export function NewsletterForm({
+  title,
+  subtitle,
+  discountPct = 10,
+}: {
+  title?: string;
+  subtitle?: string;
+  discountPct?: number;
+}) {
   const [state, setState] = useState<State>({ status: "idle" });
   const fpRef = useRef<string>("");
 
@@ -72,7 +80,9 @@ export function NewsletterForm() {
       <div className="rounded-2xl bg-cream/10 border border-cream/20 p-5 space-y-3">
         <div className="flex items-center gap-2 text-mint">
           <CheckCircle2 className="h-5 w-5 shrink-0" />
-          <p className="font-semibold text-cream">¡Bienvenida al Glow Squad!</p>
+          <p className="font-semibold text-cream">
+            {title ? `¡Bienvenida a ${title}!` : "¡Bienvenida al Glow Squad!"}
+          </p>
         </div>
         <p className="text-sm text-cream/70">
           Revisá tu correo — te enviamos el código. También lo tenés acá:
@@ -89,9 +99,7 @@ export function NewsletterForm() {
             copiar
           </button>
         </div>
-        <p className="text-xs text-cream/50">
-          Válido para tu primera compra. No acumulable.
-        </p>
+        <p className="text-xs text-cream/50">Válido para tu primera compra. No acumulable.</p>
       </div>
     );
   }
@@ -118,7 +126,7 @@ export function NewsletterForm() {
               Enviando…
             </>
           ) : (
-            "Quiero el 10%"
+            `Quiero el ${discountPct}%`
           )}
         </button>
       </form>

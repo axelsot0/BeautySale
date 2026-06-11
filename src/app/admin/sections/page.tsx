@@ -1,5 +1,6 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { getAdminTenantId } from "@/lib/tenant-context";
+import { getNewsletterConfig } from "@/lib/data/theme-query";
 import { SectionBuilder } from "./SectionBuilder";
 
 export const dynamic = "force-dynamic";
@@ -8,9 +9,10 @@ export default async function AdminSectionsPage() {
   const supabase = createServiceClient();
   const tenantId = await getAdminTenantId();
 
-  const [{ data: sections }, { data: categories }] = await Promise.all([
+  const [{ data: sections }, { data: categories }, newsletterConfig] = await Promise.all([
     supabase.from("sections").select("*").eq("tenant_id", tenantId).order("position", { ascending: true }),
     supabase.from("categories").select("slug, name").eq("tenant_id", tenantId).order("position", { ascending: true }),
+    getNewsletterConfig(tenantId),
   ]);
 
   return (
@@ -22,6 +24,7 @@ export default async function AdminSectionsPage() {
           El Hero va arriba y el footer abajo (fijos). En el medio apilá y reordená las secciones que
           quieras. Si no hay ninguna, se usa el diseño por defecto.
         </p>
+
       </header>
 
       <SectionBuilder
@@ -32,6 +35,7 @@ export default async function AdminSectionsPage() {
           config: (s.config ?? {}) as Record<string, string | undefined>,
         }))}
         categories={categories ?? []}
+        newsletterConfig={newsletterConfig}
       />
     </div>
   );

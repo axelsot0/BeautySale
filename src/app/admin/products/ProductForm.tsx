@@ -146,14 +146,25 @@ export function ProductForm({ product, categories }: Props) {
 
         <label className="block">
           <span className="field-label">Categoría</span>
-          <select name="category_id" defaultValue={product?.category_id ?? ""} className="field-input">
-            <option value="">Sin categoría</option>
+          <input
+            type="text"
+            name="category_name"
+            list="cat-list"
+            defaultValue={
+              categories.find((c) => c.id === product?.category_id)?.name ?? ""
+            }
+            placeholder="Elegí o escribí nueva…"
+            className="field-input"
+            autoComplete="off"
+          />
+          <datalist id="cat-list">
             {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.icon ? `${c.icon} ` : ""}{c.name}
-              </option>
+              <option key={c.id} value={c.icon ? `${c.icon} ${c.name}` : c.name} />
             ))}
-          </select>
+          </datalist>
+          <p className="text-[11px] text-plum-soft mt-1">
+            Elegí una existente o escribí un nombre nuevo para crearla al guardar.
+          </p>
         </label>
       </div>
 

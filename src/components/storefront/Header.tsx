@@ -5,9 +5,8 @@ import { Heart, Menu, Search, ShoppingBag, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCartStore } from "@/lib/cart/store";
 import { DEFAULT_SITE_NAME } from "@/lib/theme";
+import type { NavLink } from "@/lib/data/theme-query";
 
-// Renders the brand wordmark. Default name keeps the two-tone "Beauty·Sale" look;
-// any custom name renders with its last word accented in pink.
 function Wordmark({ name }: { name: string }) {
   if (name === DEFAULT_SITE_NAME) {
     return (
@@ -26,15 +25,17 @@ function Wordmark({ name }: { name: string }) {
   );
 }
 
-const NAV = [
-  { label: "Todos",            href: "/productos" },
-  { label: "Cuidado personal", href: "/c/cuidado-personal" },
-  { label: "Ojos",             href: "/c/ojos" },
-  { label: "Labios",           href: "/c/labios" },
-  { label: "Rostro",           href: "/c/rostro" },
-];
-
-export function Header({ logoUrl, siteName = DEFAULT_SITE_NAME }: { logoUrl?: string | null; siteName?: string }) {
+export function Header({
+  logoUrl,
+  siteName = DEFAULT_SITE_NAME,
+  navLinks = [],
+  homeHref = "/",
+}: {
+  logoUrl?: string | null;
+  siteName?: string;
+  navLinks?: NavLink[];
+  homeHref?: string;
+}) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { openCart, totalItems } = useCartStore();
@@ -48,6 +49,14 @@ export function Header({ logoUrl, siteName = DEFAULT_SITE_NAME }: { logoUrl?: st
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  const navItemClass = (highlight?: boolean) =>
+    cn(
+      "rounded-full px-3 py-2 text-sm font-medium transition",
+      highlight
+        ? "font-bold text-pink hover:bg-pink hover:text-cream"
+        : "text-plum hover:bg-pink/10 hover:text-pink",
+    );
 
   return (
     <header
@@ -68,7 +77,7 @@ export function Header({ logoUrl, siteName = DEFAULT_SITE_NAME }: { logoUrl?: st
           <Menu className="h-5 w-5" />
         </button>
 
-        <a href="/" className="font-display text-2xl md:text-3xl tracking-tight">
+        <a href={homeHref} className="font-display text-2xl md:text-3xl tracking-tight">
           {logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={logoUrl} alt={siteName} className="h-9 md:h-11 w-auto object-contain" />
@@ -78,21 +87,11 @@ export function Header({ logoUrl, siteName = DEFAULT_SITE_NAME }: { logoUrl?: st
         </a>
 
         <nav className="hidden md:flex items-center gap-1 mx-auto">
-          {NAV.map((n) => (
-            <a
-              key={n.href}
-              href={n.href}
-              className="rounded-full px-3 py-2 text-sm font-medium text-plum hover:bg-pink/10 hover:text-pink transition"
-            >
+          {navLinks.map((n) => (
+            <a key={n.href} href={n.href} className={navItemClass(n.highlight)}>
               {n.label}
             </a>
           ))}
-          <a
-            href="/ofertas"
-            className="rounded-full px-3 py-2 text-sm font-bold text-pink hover:bg-pink hover:text-cream transition"
-          >
-            Ofertas 🔥
-          </a>
         </nav>
 
         <div className="ml-auto md:ml-0 flex items-center gap-1">
@@ -119,20 +118,17 @@ export function Header({ logoUrl, siteName = DEFAULT_SITE_NAME }: { logoUrl?: st
 
       {mobileOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
-          <div
-            className="absolute inset-0 bg-plum/40"
-            onClick={() => setMobileOpen(false)}
-          />
+          <div className="absolute inset-0 bg-plum/40" onClick={() => setMobileOpen(false)} />
           <div className="absolute left-0 top-0 bottom-0 w-[80%] max-w-sm bg-cream p-6 flex flex-col gap-2">
             <div className="flex items-center justify-between mb-4">
-              <span className="font-display text-2xl">
+              <a href={homeHref} className="font-display text-2xl">
                 {logoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={logoUrl} alt={siteName} className="h-9 w-auto object-contain" />
                 ) : (
                   <Wordmark name={siteName} />
                 )}
-              </span>
+              </a>
               <button
                 aria-label="Cerrar menú"
                 onClick={() => setMobileOpen(false)}
@@ -141,21 +137,20 @@ export function Header({ logoUrl, siteName = DEFAULT_SITE_NAME }: { logoUrl?: st
                 <X className="h-5 w-5" />
               </button>
             </div>
-            {NAV.map((n) => (
+            {navLinks.map((n) => (
               <a
                 key={n.href}
                 href={n.href}
-                className="rounded-2xl px-4 py-3 font-medium hover:bg-pink/10 hover:text-pink"
+                className={cn(
+                  "rounded-2xl px-4 py-3 font-medium",
+                  n.highlight
+                    ? "font-bold text-pink hover:bg-pink hover:text-cream"
+                    : "hover:bg-pink/10 hover:text-pink",
+                )}
               >
                 {n.label}
               </a>
             ))}
-            <a
-              href="/ofertas"
-              className="rounded-2xl px-4 py-3 font-bold text-pink hover:bg-pink hover:text-cream"
-            >
-              Ofertas 🔥
-            </a>
           </div>
         </div>
       )}

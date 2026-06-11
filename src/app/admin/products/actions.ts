@@ -10,16 +10,15 @@ import { slugify } from "@/lib/utils";
 import { uploadImage, deleteImageByUrl } from "@/lib/storage";
 
 const schema = z.object({
-  id: z.string().uuid().optional(),
-  title: z.string().min(1).max(160),
-  slug: z.string().max(160).optional(),
-  description: z.string().max(2000).default(""),
-  price: z.coerce.number().positive(),
+  id:               z.string().uuid().optional(),
+  title:            z.string().min(1).max(160),
+  slug:             z.string().max(160).optional(),
+  description:      z.string().max(2000).default(""),
+  price:            z.coerce.number().positive(),
   discount_percent: z.coerce.number().int().min(0).max(99).default(0),
-  stock: z.coerce.number().int().min(0).default(0),
-  category_id: z.string().uuid().nullable().optional(),
-  featured: z.boolean().default(false),
-  on_sale: z.boolean().default(false),
+  stock:            z.coerce.number().int().min(0).default(0),
+  featured:         z.boolean().default(false),
+  on_sale:          z.boolean().default(false),
 });
 
 export type ProductFormState = { error?: string; fieldErrors?: Record<string, string> };
@@ -37,16 +36,15 @@ export async function saveProduct(
   const tenantId = await ensureAdmin();
 
   const parsed = schema.safeParse({
-    id: formData.get("id") || undefined,
-    title: formData.get("title"),
-    slug: formData.get("slug") || undefined,
-    description: formData.get("description") || "",
-    price: formData.get("price"),
+    id:               formData.get("id") || undefined,
+    title:            formData.get("title"),
+    slug:             formData.get("slug") || undefined,
+    description:      formData.get("description") || "",
+    price:            formData.get("price"),
     discount_percent: formData.get("discount_percent") || 0,
-    stock: formData.get("stock") || 0,
-    category_id: formData.get("category_id") || null,
-    featured: formData.get("featured") === "on",
-    on_sale: formData.get("on_sale") === "on",
+    stock:            formData.get("stock") || 0,
+    featured:         formData.get("featured") === "on",
+    on_sale:          formData.get("on_sale") === "on",
   });
 
   if (!parsed.success) {
@@ -57,8 +55,48 @@ export async function saveProduct(
     return { error: "Revisá los campos", fieldErrors };
   }
 
-  const { id, title, slug, description, price, discount_percent, stock, category_id, featured, on_sale } = parsed.data;
+  const { id, title, slug, description, price, discount_percent, stock, featured, on_sale } = parsed.data;
   const finalSlug = slug ? slugify(slug) : slugify(title);
+
+  // Resolve category: lookup by name, create if new
+  const supabase = createServiceClient();
+  const rawCatName = String(formData.get("category_name") ?? "").trim();
+  // Strip leading emoji if present (datalist option includes icon prefix)
+  const categoryName = rawCatName.replace(/^\S+\s/, (m) =>
+    /\p{Emoji}/u.test(m.trim()) ? "" : m
+  ).trim();
+
+  let category_id: string | null = null;
+  if (categoryName) {
+    const { data: existing } = await supabase
+      .from("categories")
+      .select("id")
+      .eq("tenant_id", tenantId)
+      .ilike("name", categoryName)
+      .maybeSingle();
+
+    if (existing) {
+      category_id = existing.id;
+    } else {
+      const { data: maxPos } = await supabase
+        .from("categories")
+        .select("position")
+        .eq("tenant_id", tenantId)
+        .order("position", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const position = ((maxPos?.position as number | null) ?? -1) + 1;
+      const { data: newCat, error: catErr } = await supabase
+        .from("categories")
+        .insert({ tenant_id: tenantId, name: categoryName, slug: slugify(categoryName), position })
+        .select("id")
+        .single();
+      if (catErr) return { error: `No se pudo crear la categoría: ${catErr.message}` };
+      category_id = newCat?.id ?? null;
+      // Revalidate categories list
+      revalidatePath("/admin/categories");
+    }
+  }
 
   // Upload new images
   const newImageFiles = formData.getAll("new_images") as File[];
@@ -77,7 +115,6 @@ export async function saveProduct(
   const existingImages = formData.getAll("existing_images") as string[];
   const images = [...existingImages, ...uploadedUrls];
 
-  const supabase = createServiceClient();
   const payload = {
     title,
     slug: finalSlug,

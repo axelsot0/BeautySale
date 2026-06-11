@@ -62,7 +62,7 @@ export async function toggleSection(formData: FormData) {
 export async function moveSection(formData: FormData) {
   const tenantId = await ensureAdmin();
   const id = String(formData.get("id") ?? "");
-  const dir = String(formData.get("dir") ?? ""); // up | down
+  const dir = String(formData.get("dir") ?? "");
   if (!id) return;
 
   const supabase = createServiceClient();
@@ -95,16 +95,30 @@ export async function updateSection(formData: FormData) {
     return v || undefined;
   };
 
+  const supabase = createServiceClient();
+
+  // newsletter config writes to tenants, not sections.config
+  if (type === "newsletter") {
+    const pct = parseInt(String(formData.get("discount_pct") ?? "10"), 10);
+    await supabase.from("tenants").update({
+      newsletter_title:        g("title") ?? null,
+      newsletter_subtitle:     g("subtitle") ?? null,
+      newsletter_discount_pct: isNaN(pct) ? 10 : Math.max(1, Math.min(100, pct)),
+    }).eq("id", tenantId);
+    revalidate();
+    return;
+  }
+
   let config: SectionConfig = {};
   switch (type) {
     case "banner":
       config = {
-        title: g("title"),
-        subtitle: g("subtitle"),
+        title:     g("title"),
+        subtitle:  g("subtitle"),
         image_url: g("image_url"),
         cta_label: g("cta_label"),
-        cta_link: g("cta_link"),
-        bg_color: g("bg_color") || "#FF4D8B",
+        cta_link:  g("cta_link"),
+        bg_color:  g("bg_color") || "#FF4D8B",
       };
       break;
     case "product_carousel": {
@@ -115,14 +129,38 @@ export async function updateSection(formData: FormData) {
     case "mosaic":
       config = { eyebrow: g("eyebrow"), title: g("title") };
       break;
-    case "newsletter":
-      config = { title: g("title"), subtitle: g("subtitle") };
-      break;
     default:
       config = {};
   }
 
-  const supabase = createServiceClient();
   await supabase.from("sections").update({ config }).eq("id", id).eq("tenant_id", tenantId);
   revalidate();
+}
+
+// Upload an image to Supabase storage bucket "section-images".
+// Returns { url } on success or { error } on failure.
+export async function uploadSectionImage(
+  formData: FormData,
+): Promise<{ url?: string; error?: string }> {
+  const tenantId = await ensureAdmin();
+  const file = formData.get("file") as File | null;
+  if (!file || !file.size) return { error: "Sin archivo" };
+
+  const ext = (file.name.split(".").pop() ?? "jpg").toLowerCase();
+  const allowed = ["jpg", "jpeg", "png", "webp", "gif", "svg"];
+  if (!allowed.includes(ext)) return { error: "Formato no soportado (jpg, png, webp, gif)" };
+  if (file.size > 5 * 1024 * 1024) return { error: "Máximo 5 MB" };
+
+  const path = `${tenantId}/${crypto.randomUUID()}.${ext}`;
+  const buffer = await file.arrayBuffer();
+
+  const supabase = createServiceClient();
+  const { error: uploadError } = await supabase.storage
+    .from("section-images")
+    .upload(path, buffer, { contentType: file.type, upsert: false });
+
+  if (uploadError) return { error: uploadError.message };
+
+  const { data: { publicUrl } } = supabase.storage.from("section-images").getPublicUrl(path);
+  return { url: publicUrl };
 }

@@ -2,8 +2,7 @@ import "server-only";
 import { createServiceClient } from "@/lib/supabase/service";
 import { DEFAULT_TENANT_ID } from "@/lib/tenant";
 
-// Newsletter welcome codes (GLOW-XXXXXX) grant a fixed one-time discount.
-export const NEWSLETTER_DISCOUNT_PERCENT = 10;
+export const NEWSLETTER_DISCOUNT_PERCENT = 10; // fallback when tenant has no config
 
 export type DiscountCheck =
   | { valid: true; percent: number }
@@ -27,7 +26,15 @@ export async function checkDiscountCode(
 
   if (!data) return { valid: false, reason: "not_found" };
   if (data.used) return { valid: false, reason: "used" };
-  return { valid: true, percent: NEWSLETTER_DISCOUNT_PERCENT };
+
+  const { data: tenant } = await supabase
+    .from("tenants")
+    .select("newsletter_discount_pct")
+    .eq("id", tenantId)
+    .single();
+  const percent = (tenant?.newsletter_discount_pct as number | null) ?? NEWSLETTER_DISCOUNT_PERCENT;
+
+  return { valid: true, percent };
 }
 
 // Marks a code consumed. Idempotent; ignores unknown codes.

@@ -9,6 +9,7 @@ import {
   getActiveFlashSale,
   getBrands,
 } from "@/lib/data/queries";
+import { getNewsletterConfig } from "@/lib/data/theme-query";
 import { TopSellers } from "./TopSellers";
 import { ProductCarousel } from "./ProductCarousel";
 import { Mosaic } from "./Mosaic";
@@ -88,16 +89,18 @@ async function RenderSection({ section, tenantId }: { section: Section; tenantId
       return <BrandStrip brands={brands} />;
     }
 
-    case "newsletter":
+    case "newsletter": {
+      const nl = await getNewsletterConfig(tenantId);
       return (
         <section className="py-12 md:py-16">
           <div className="max-w-2xl mx-auto px-4 md:px-8 text-center space-y-4">
-            {c.title && <h2 className="font-display text-3xl md:text-5xl">{c.title}</h2>}
-            {c.subtitle && <p className="text-plum-soft">{c.subtitle}</p>}
-            <NewsletterForm />
+            <h2 className="font-display text-3xl md:text-5xl">{nl.title}</h2>
+            {nl.subtitle && <p className="text-plum-soft">{nl.subtitle}</p>}
+            <NewsletterForm title={nl.title} subtitle={nl.subtitle} discountPct={nl.discountPct} />
           </div>
         </section>
       );
+    }
 
     default:
       return null;
