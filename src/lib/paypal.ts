@@ -9,10 +9,14 @@ function baseUrl(mode: "sandbox" | "live"): string {
   return mode === "live" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
 }
 
+// Credenciales explícitas (ej. cuenta de la plataforma para suscripciones).
+// Si no se pasan, se usan las del tenant (Ajustes → Pagos).
+export type PayPalCreds = { clientId: string; secret: string; mode: "sandbox" | "live" };
+
 // ── Auth ─────────────────────────────────────────────────────────────────────
 
-async function getAuth(): Promise<{ token: string; base: string }> {
-  const { clientId, secret, mode } = await getPayPalConfig();
+async function getAuth(creds?: PayPalCreds): Promise<{ token: string; base: string }> {
+  const { clientId, secret, mode } = creds ?? (await getPayPalConfig());
 
   if (!clientId || !secret) {
     throw new Error("PayPal no está configurado. Ingresá las credenciales en Ajustes.");
@@ -55,6 +59,8 @@ export interface CreatePayPalOrderInput {
   currency?: string;
   returnUrl: string;
   cancelUrl: string;
+  customId?: string;      // carried through to the capture (max 127 chars)
+  creds?: PayPalCreds;
 }
 
 export interface PayPalOrderResult {
@@ -68,7 +74,7 @@ export interface PayPalOrderResult {
 export async function createPayPalOrder(
   input: CreatePayPalOrderInput,
 ): Promise<PayPalOrderResult> {
-  const { token, base: BASE } = await getAuth();
+  const { token, base: BASE } = await getAuth(input.creds);
   const currency = input.currency ?? "USD";
   const itemTotal = input.subtotal.toFixed(2);
   const discount = (input.discount ?? 0).toFixed(2);
@@ -85,6 +91,7 @@ export async function createPayPalOrder(
     intent: "CAPTURE",
     purchase_units: [
       {
+        ...(input.customId ? { custom_id: input.customId } : {}),
         amount: {
           currency_code: currency,
           value: total,
@@ -126,12 +133,18 @@ export interface PayPalCaptureResult {
   id: string;
   status: "COMPLETED" | "DECLINED" | "FAILED" | string;
   payer?: { email_address?: string; name?: { given_name?: string } };
+  purchase_units?: {
+    payments?: {
+      captures?: { id: string; custom_id?: string; amount?: { value: string; currency_code: string } }[];
+    };
+  }[];
 }
 
 export async function capturePayPalOrder(
   paypalOrderId: string,
+  creds?: PayPalCreds,
 ): Promise<PayPalCaptureResult> {
-  const { token, base: BASE } = await getAuth();
+  const { token, base: BASE } = await getAuth(creds);
 
   const res = await fetch(`${BASE}/v2/checkout/orders/${paypalOrderId}/capture`, {
     method: "POST",

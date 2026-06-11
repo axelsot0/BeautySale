@@ -1,8 +1,10 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { getAdminTenantId } from "@/lib/tenant-context";
 import { getTenantStatus } from "@/lib/demo-server";
+import { getPlatformPayPalCreds } from "@/lib/platform-paypal";
 import { PLAN_PRICES, PLAN_LABELS, type Plan } from "@/lib/plans";
-import { Crown, Check, CalendarClock, Receipt, Sparkle } from "lucide-react";
+import { PayForm } from "./PayForm";
+import { Crown, Check, CalendarClock, Receipt, Sparkle, CheckCircle2, XCircle } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -19,9 +21,15 @@ function fmtDate(iso: string | null): string {
   return new Date(iso).toLocaleDateString("es", { day: "numeric", month: "long", year: "numeric" });
 }
 
-export default async function SubscriptionPage() {
+export default async function SubscriptionPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ paid?: string; error?: string; cancelled?: string }>;
+}) {
+  const { paid, error, cancelled } = await searchParams;
   const tenantId = await getAdminTenantId();
   const status = await getTenantStatus(tenantId);
+  const paymentsEnabled = getPlatformPayPalCreds() !== null;
 
   const supabase = createServiceClient();
   const { data: payments } = await supabase
@@ -43,6 +51,19 @@ export default async function SubscriptionPage() {
         <p className="text-sm font-bold uppercase tracking-widest text-pink">cuenta</p>
         <h1 className="font-display text-4xl mt-1">Suscripción</h1>
       </header>
+
+      {paid && (
+        <div className="flex items-center gap-2 rounded-2xl bg-mint/15 border border-mint/30 px-5 py-4 text-sm font-medium">
+          <CheckCircle2 className="h-5 w-5 text-mint shrink-0" />
+          Pago recibido. Tu plan fue actualizado.
+        </div>
+      )}
+      {(error || cancelled) && (
+        <div className="flex items-center gap-2 rounded-2xl bg-pink/10 border border-pink/20 px-5 py-4 text-sm font-medium text-pink">
+          <XCircle className="h-5 w-5 shrink-0" />
+          {cancelled ? "Pago cancelado." : "No pudimos procesar el pago. Intentá de nuevo."}
+        </div>
+      )}
 
       {/* Estado actual */}
       <section className="rounded-[28px] bg-plum text-cream p-7 md:p-9">
@@ -85,6 +106,8 @@ export default async function SubscriptionPage() {
           </div>
         )}
       </section>
+
+      {paymentsEnabled && <PayForm currentPlan={plan} />}
 
       {/* Comparativa de planes */}
       <section>
