@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { checkDiscountCode } from "@/lib/discount";
+import { getStorefrontTenantId } from "@/lib/tenant-context";
 
 const schema = z.object({ code: z.string().min(1).max(40) });
 
@@ -17,7 +18,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ valid: false, error: "invalid" }, { status: 400 });
   }
 
-  const result = await checkDiscountCode(parsed.data.code);
+  // Scope to the requesting storefront's tenant — prevents cross-tenant enumeration.
+  const tenantId = await getStorefrontTenantId();
+  const result = await checkDiscountCode(parsed.data.code, tenantId);
   if (!result.valid) {
     return NextResponse.json({ valid: false, error: result.reason }, { status: 200 });
   }

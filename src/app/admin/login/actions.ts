@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -17,7 +18,42 @@ export type LoginState = { error?: string };
 // Generic message used for ALL auth failures — prevents username enumeration.
 const AUTH_ERROR = "Credenciales inválidas";
 
+// Rate limiting: 10 attempts per IP per 15-minute window.
+const WINDOW_MS = 15 * 60 * 1000;
+const MAX_ATTEMPTS = 10;
+
+async function getClientIp(): Promise<string> {
+  const h = await headers();
+  return h.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown";
+}
+
+async function checkAndRecordAttempt(ip: string): Promise<boolean> {
+  const admin = createServiceClient();
+  const windowStart = new Date(Date.now() - WINDOW_MS).toISOString();
+
+  // Count attempts in window
+  const { count } = await admin
+    .from("login_attempts")
+    .select("id", { count: "exact", head: true })
+    .eq("ip", ip)
+    .gte("attempted_at", windowStart);
+
+  if ((count ?? 0) >= MAX_ATTEMPTS) return false; // blocked
+
+  // Record this attempt (fire-and-forget cleanup of rows > 1h old)
+  await admin.from("login_attempts").insert({ ip });
+  admin.from("login_attempts").delete().lt("attempted_at", new Date(Date.now() - 60 * 60 * 1000).toISOString()).then(() => {});
+
+  return true; // allowed
+}
+
 export async function login(_prev: LoginState, formData: FormData): Promise<LoginState> {
+  const ip = await getClientIp();
+  const allowed = await checkAndRecordAttempt(ip);
+  if (!allowed) {
+    return { error: "Demasiados intentos. Intentá de nuevo en 15 minutos." };
+  }
+
   const parsed = schema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
