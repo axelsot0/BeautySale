@@ -2,8 +2,34 @@ import {
   Store, Sparkles, ShoppingBag, MessageCircle, Palette, Zap,
   ArrowRight, Check,
 } from "lucide-react";
+import { ProPromoForm } from "./ProPromoForm";
+import { PLAN_PRICES, PRO_DISCOUNT_PCT } from "@/lib/plans";
 
 export const dynamic = "force-dynamic";
+
+const PLAN_CARDS = [
+  {
+    name: "Demo",
+    price: "Gratis",
+    period: "15 días",
+    perks: ["Catálogo y pedidos", "Hero personalizable", "Cobro por WhatsApp manual"],
+    highlight: false,
+  },
+  {
+    name: "Basic",
+    price: `$${PLAN_PRICES.basic}`,
+    period: "/mes",
+    perks: ["Todo lo del demo", "Tema y colores propios", "Flash sales y marcas", "Secciones de portada"],
+    highlight: false,
+  },
+  {
+    name: "Pro",
+    price: `$${PLAN_PRICES.pro}`,
+    period: "/mes",
+    perks: ["Todo lo de Basic", "Secciones personalizadas", "Múltiples admins", "Soporte prioritario"],
+    highlight: true,
+  },
+];
 
 const FEATURES = [
   { icon: ShoppingBag, title: "Catálogo y pedidos", desc: "Cargá productos, categorías y recibí pedidos con seguimiento de estado." },
@@ -92,6 +118,66 @@ export default function LandingPage() {
               <p className="text-sm text-plum-soft max-w-xs mx-auto">{s.desc}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Pricing */}
+      <section className="max-w-6xl mx-auto px-4 md:px-8 py-12 md:py-16 w-full">
+        <h2 className="font-display text-3xl md:text-4xl text-center">Planes simples</h2>
+        <p className="text-plum-soft text-center mt-2">Empezá gratis, crecé cuando lo necesites.</p>
+        <div className="grid md:grid-cols-3 gap-5 mt-10">
+          {PLAN_CARDS.map((p) => (
+            <div
+              key={p.name}
+              className={`rounded-[28px] p-7 space-y-5 ${
+                p.highlight
+                  ? "bg-plum text-cream shadow-[0_24px_60px_rgba(45,27,78,0.25)]"
+                  : "bg-white border border-plum/10"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="font-display text-2xl">{p.name}</h3>
+                {p.highlight && (
+                  <span className="rounded-full bg-pink px-3 py-1 text-[10px] font-bold uppercase tracking-widest">
+                    Popular
+                  </span>
+                )}
+              </div>
+              <p>
+                <span className="font-display text-4xl">{p.price}</span>
+                <span className={p.highlight ? "text-cream/60" : "text-plum-soft"}> {p.period}</span>
+              </p>
+              <ul className="space-y-2 text-sm">
+                {p.perks.map((perk) => (
+                  <li key={perk} className="flex items-center gap-2">
+                    <Check className={`h-4 w-4 shrink-0 ${p.highlight ? "text-mint" : "text-pink"}`} />
+                    {perk}
+                  </li>
+                ))}
+              </ul>
+              <a
+                href="/signup"
+                className={`block text-center rounded-full px-6 py-3 font-bold transition ${
+                  p.highlight
+                    ? "bg-pink text-cream hover:opacity-90"
+                    : "bg-plum/5 text-plum hover:bg-plum hover:text-cream"
+                }`}
+              >
+                Empezar
+              </a>
+            </div>
+          ))}
+        </div>
+
+        {/* Promo 30% Pro */}
+        <div className="mt-10 rounded-[28px] bg-butter/20 border border-butter/40 p-7 md:p-9 text-center max-w-2xl mx-auto">
+          <h3 className="font-display text-2xl">
+            {PRO_DISCOUNT_PCT}% OFF en tu primer mes Pro
+          </h3>
+          <p className="text-plum-soft text-sm mt-2 mb-5">
+            Dejá tu correo y te damos un código de descuento único para el plan Pro.
+          </p>
+          <ProPromoForm />
         </div>
       </section>
 

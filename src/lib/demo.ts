@@ -16,8 +16,12 @@ export function isPathLockedInDemo(pathname: string): boolean {
   return DEMO_LOCKED_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
+import type { Plan } from "@/lib/plans";
+
 export type TenantStatus = {
   isDemo: boolean;
+  plan: Plan;
+  planExpiresAt: string | null;
   demoExpiresAt: string | null;
   daysLeft: number | null;
   expired: boolean;
@@ -25,6 +29,8 @@ export type TenantStatus = {
 
 export const NON_DEMO_STATUS: TenantStatus = {
   isDemo: false,
+  plan: "basic",
+  planExpiresAt: null,
   demoExpiresAt: null,
   daysLeft: null,
   expired: false,

@@ -81,19 +81,40 @@ export async function setTenantActive(formData: FormData) {
   revalidatePath("/dev");
 }
 
-// Promote a demo store to an official one: clears the demo flag + expiry so it
-// is no longer feature-gated nor auto-deleted.
-export async function promoteTenant(formData: FormData) {
+// Assign a paid plan to a store (promotes demos to official) and record the
+// payment. Billing is manual until PayPal subscriptions land (Fase C).
+export async function setPlan(formData: FormData) {
   await ensureDeveloper();
   const id = Number(formData.get("id"));
-  if (!id) return;
+  const plan = String(formData.get("plan") ?? "");
+  const months = Math.max(1, Math.min(24, Number(formData.get("months")) || 1));
+  const amount = Number(formData.get("amount"));
+  if (!id || (plan !== "basic" && plan !== "pro")) return;
+
+  const expiresAt = new Date(Date.now() + months * 30 * 24 * 60 * 60 * 1000).toISOString();
 
   const supabase = createServiceClient();
   await supabase
     .from("tenants")
-    .update({ is_demo: false, demo_expires_at: null, active: true })
+    .update({
+      plan,
+      plan_expires_at: expiresAt,
+      is_demo: false,
+      demo_expires_at: null,
+      active: true,
+    })
     .eq("id", id);
   await supabase.from("admins").update({ active: true }).eq("tenant_id", id).neq("role", "developer");
+
+  if (Number.isFinite(amount) && amount >= 0) {
+    await supabase.from("subscription_payments").insert({
+      tenant_id: id,
+      plan,
+      months,
+      amount,
+      method: "manual",
+    });
+  }
 
   revalidatePath("/dev");
 }

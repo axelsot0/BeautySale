@@ -1,6 +1,7 @@
 import { createServiceClient } from "@/lib/supabase/service";
-import { setTenantActive, promoteTenant, deleteTenant, enterStore } from "./actions";
+import { setTenantActive, setPlan, deleteTenant, enterStore } from "./actions";
 import { CreateSuperAdminForm } from "./CreateSuperAdminForm";
+import { PLAN_PRICES } from "@/lib/plans";
 import { Store, ExternalLink, LogIn, Rocket, Trash2 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +19,7 @@ export default async function DevPage() {
   const [{ data: tenants }, { data: members }] = await Promise.all([
     supabase
       .from("tenants")
-      .select("id, slug, name, active, owner_id, is_demo, demo_expires_at")
+      .select("id, slug, name, active, owner_id, is_demo, demo_expires_at, plan, plan_expires_at")
       .order("id", { ascending: true }),
     supabase.from("admins").select("email, role, tenant_id"),
   ]);
@@ -61,11 +62,20 @@ export default async function DevPage() {
                       {expired ? "demo vencida" : `demo · ${daysLeft}d`}
                     </span>
                   ) : (
-                    <span className={`text-[10px] font-bold uppercase tracking-widest rounded-full px-2 py-0.5 ${
-                      t.active ? "bg-mint/20 text-mint" : "bg-cream/10 text-cream/50"
-                    }`}>
-                      {t.active ? "activa" : "inactiva"}
-                    </span>
+                    <>
+                      <span className={`text-[10px] font-bold uppercase tracking-widest rounded-full px-2 py-0.5 ${
+                        t.plan === "pro" ? "bg-lavender/30 text-lavender" : "bg-mint/20 text-mint"
+                      }`}>
+                        {t.plan ?? "basic"}
+                        {t.plan_expires_at &&
+                          ` · ${demoDaysLeft(t.plan_expires_at as string)}d`}
+                      </span>
+                      {!t.active && (
+                        <span className="text-[10px] font-bold uppercase tracking-widest rounded-full px-2 py-0.5 bg-cream/10 text-cream/50">
+                          inactiva
+                        </span>
+                      )}
+                    </>
                   )}
                 </div>
                 <p className="text-sm text-cream/60 truncate">
@@ -91,16 +101,40 @@ export default async function DevPage() {
                 ver
               </a>
 
-              {/* Promote demo -> official */}
-              {isDemo && (
-                <form action={promoteTenant}>
-                  <input type="hidden" name="id" value={t.id} />
-                  <button className="inline-flex items-center gap-1.5 rounded-full bg-mint text-plum px-4 py-2 text-xs font-semibold hover:opacity-90 transition">
-                    <Rocket className="h-3.5 w-3.5" />
-                    Activar tienda
-                  </button>
-                </form>
-              )}
+              {/* Assign / renew plan (demo -> official, or change plan) */}
+              <form action={setPlan} className="flex items-center gap-1.5">
+                <input type="hidden" name="id" value={t.id} />
+                <select
+                  name="plan"
+                  defaultValue={t.plan === "pro" ? "pro" : "basic"}
+                  className="rounded-full bg-cream/10 border border-cream/15 px-2.5 py-2 text-xs text-cream outline-none"
+                >
+                  <option value="basic" className="text-plum">Basic ${PLAN_PRICES.basic}</option>
+                  <option value="pro" className="text-plum">Pro ${PLAN_PRICES.pro}</option>
+                </select>
+                <input
+                  name="months"
+                  type="number"
+                  min={1}
+                  max={24}
+                  defaultValue={1}
+                  title="Meses"
+                  className="w-14 rounded-full bg-cream/10 border border-cream/15 px-2.5 py-2 text-xs text-cream outline-none"
+                />
+                <input
+                  name="amount"
+                  type="number"
+                  step="0.01"
+                  min={0}
+                  placeholder="$"
+                  title="Monto cobrado (USD)"
+                  className="w-16 rounded-full bg-cream/10 border border-cream/15 px-2.5 py-2 text-xs text-cream outline-none"
+                />
+                <button className="inline-flex items-center gap-1.5 rounded-full bg-mint text-plum px-3 py-2 text-xs font-semibold hover:opacity-90 transition">
+                  <Rocket className="h-3.5 w-3.5" />
+                  {isDemo ? "Activar" : "Renovar"}
+                </button>
+              </form>
 
               {/* Activate / deactivate (official stores) */}
               {!isDemo && (
