@@ -26,6 +26,11 @@ export default async function AdminLayout({
   // the store owner only.
   const status = isDeveloper ? null : await getTenantStatus(tenantId);
 
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const planDaysLeft = status?.planExpiresAt
+    ? Math.max(0, Math.ceil((new Date(status.planExpiresAt).getTime() - Date.now()) / DAY_MS))
+    : null;
+
   return (
     <AdminShell
       userEmail={user.email ?? ""}
@@ -34,6 +39,7 @@ export default async function AdminLayout({
       currentTenantId={currentTenantId}
       isDemo={status?.isDemo ?? false}
       demoDaysLeft={status?.daysLeft ?? null}
+      planDaysLeft={planDaysLeft}
     >
       {children}
     </AdminShell>

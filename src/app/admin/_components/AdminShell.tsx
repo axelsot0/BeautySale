@@ -21,6 +21,7 @@ import {
   X,
   Lock,
   Sparkle,
+  Crown,
 } from "lucide-react";
 import { logout } from "../login/actions";
 import { switchTenant } from "./tenant-switch";
@@ -42,6 +43,7 @@ const NAV = [
   { label: "Tema",       href: "/admin/theme",      icon: Palette },
   { label: "Ajustes",    href: "/admin/settings",   icon: CreditCard },
   { label: "Admins",     href: "/admin/admins",     icon: Shield },
+  { label: "Suscripción", href: "/admin/subscription", icon: Crown },
 ];
 
 export function AdminShell({
@@ -51,6 +53,7 @@ export function AdminShell({
   currentTenantId = 0,
   isDemo = false,
   demoDaysLeft = null,
+  planDaysLeft = null,
   children,
 }: {
   userEmail: string;
@@ -59,6 +62,7 @@ export function AdminShell({
   currentTenantId?: number;
   isDemo?: boolean;
   demoDaysLeft?: number | null;
+  planDaysLeft?: number | null;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -91,6 +95,7 @@ export function AdminShell({
         currentTenantId={currentTenantId}
         isDemo={isDemo}
         demoDaysLeft={demoDaysLeft}
+        planDaysLeft={planDaysLeft}
         className="hidden md:flex"
       />
 
@@ -105,6 +110,7 @@ export function AdminShell({
             currentTenantId={currentTenantId}
             isDemo={isDemo}
             demoDaysLeft={demoDaysLeft}
+            planDaysLeft={planDaysLeft}
             className="absolute left-0 top-0 bottom-0 w-72"
             onClose={() => setOpen(false)}
           />
@@ -150,6 +156,7 @@ function Sidebar({
   currentTenantId = 0,
   isDemo = false,
   demoDaysLeft = null,
+  planDaysLeft = null,
   className,
   onClose,
 }: {
@@ -160,6 +167,7 @@ function Sidebar({
   currentTenantId?: number;
   isDemo?: boolean;
   demoDaysLeft?: number | null;
+  planDaysLeft?: number | null;
   className?: string;
   onClose?: () => void;
 }) {
@@ -202,6 +210,22 @@ function Sidebar({
               : "Activá tu tienda para desbloquear todas las funciones."}
           </p>
         </div>
+      )}
+
+      {!isDemo && planDaysLeft != null && planDaysLeft <= 7 && (
+        <a
+          href="/admin/subscription"
+          className="block mb-4 rounded-2xl bg-pink/15 border border-pink/30 px-4 py-3 space-y-1 hover:bg-pink/25 transition"
+        >
+          <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-pink">
+            <Crown className="h-3.5 w-3.5" /> Plan por vencer
+          </p>
+          <p className="text-xs text-cream/70 leading-snug">
+            {planDaysLeft === 0
+              ? "Tu plan vence hoy. Renovalo para que tu tienda siga online."
+              : `Vence en ${planDaysLeft} ${planDaysLeft === 1 ? "día" : "días"}. Tocá para ver detalles.`}
+          </p>
+        </a>
       )}
 
       {isDeveloper && tenants.length > 0 && (
