@@ -41,9 +41,9 @@ export function ProductCard({ product }: { product: Product }) {
     <a
       href={`/p/${product.slug}`}
       className={cn(
-        "group relative flex flex-col gap-3 rounded-[24px] bg-white/70 p-3",
-        "transition-all duration-300 hover:-translate-y-1 hover:rotate-[-0.5deg]",
-        "shadow-[0_4px_16px_rgba(45,27,78,0.06)] hover:shadow-[0_16px_40px_rgba(255,77,139,0.18)]",
+        "group relative flex flex-col gap-3 rounded-[24px] bg-white/80 p-3 ring-1 ring-plum/5",
+        "transition-all duration-300 hover:-translate-y-1.5 hover:rotate-[-0.5deg] hover:ring-pink/20",
+        "shadow-[0_4px_16px_rgba(45,27,78,0.06)] hover:shadow-[0_20px_48px_rgba(255,77,139,0.2)]",
       )}
     >
       <div
@@ -101,7 +101,7 @@ export function ProductCard({ product }: { product: Product }) {
       <button
         type="button"
         onClick={handleAdd}
-        className="mt-1 rounded-full bg-plum px-4 py-2.5 text-sm font-semibold text-cream transition hover:bg-pink hover:shadow-[0_0_24px_rgba(255,77,139,0.4)]"
+        className="mt-1 rounded-full bg-plum px-4 py-2.5 text-sm font-semibold text-cream transition hover:bg-pink hover:shadow-[0_0_24px_rgba(255,77,139,0.4)] active:scale-[0.97]"
       >
         {t.add_to_cart}
       </button>

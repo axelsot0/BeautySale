@@ -16,6 +16,40 @@ import { Mosaic } from "./Mosaic";
 import { FlashSale } from "./FlashSale";
 import { BrandStrip } from "./BrandStrip";
 import { NewsletterForm } from "./NewsletterForm";
+import { Editable, type EditableField } from "./edit/Editable";
+
+// Campos editables inline por tipo de sección (modo edición).
+function editFields(type: string, c: SectionConfig): EditableField[] | null {
+  switch (type) {
+    case "banner":
+      return [
+        { name: "title", label: "Título", value: c.title ?? "" },
+        { name: "subtitle", label: "Subtítulo", value: c.subtitle ?? "", type: "textarea" },
+        { name: "cta_label", label: "Texto del botón", value: c.cta_label ?? "" },
+        { name: "cta_link", label: "Link del botón", value: c.cta_link ?? "" },
+        { name: "bg_color", label: "Color de fondo", value: c.bg_color ?? "#FF4D8B", type: "color" },
+      ];
+    case "product_carousel":
+      return [
+        { name: "eyebrow", label: "Etiqueta superior", value: c.eyebrow ?? "" },
+        { name: "title", label: "Título", value: c.title ?? "" },
+      ];
+    case "mosaic":
+      return [
+        { name: "eyebrow", label: "Etiqueta superior", value: c.eyebrow ?? "" },
+        { name: "title", label: "Título", value: c.title ?? "" },
+      ];
+    default:
+      return null;
+  }
+}
+
+const SECTION_LABELS: Record<string, string> = {
+  banner: "Banner",
+  product_carousel: "Carrusel",
+  mosaic: "Mosaico",
+  newsletter: "Newsletter",
+};
 
 async function RenderSection({ section, tenantId }: { section: Section; tenantId: number }) {
   const c = (section.config ?? {}) as SectionConfig;
@@ -160,15 +194,54 @@ async function RenderSection({ section, tenantId }: { section: Section; tenantId
 export async function SectionStack({
   sections,
   tenantId,
+  editable = false,
 }: {
   sections: Section[];
   tenantId: number;
+  editable?: boolean;
 }) {
+  const nl =
+    editable && sections.some((s) => s.type === "newsletter")
+      ? await getNewsletterConfig(tenantId)
+      : null;
+
   return (
     <>
-      {sections.map((s) => (
-        <RenderSection key={s.id} section={s} tenantId={tenantId} />
-      ))}
+      {sections.map((s) => {
+        const node = <RenderSection key={s.id} section={s} tenantId={tenantId} />;
+        if (!editable) return node;
+
+        if (s.type === "newsletter" && nl) {
+          return (
+            <Editable
+              key={s.id}
+              title="Newsletter"
+              kind="newsletter"
+              fields={[
+                { name: "title", label: "Título", value: nl.title },
+                { name: "subtitle", label: "Subtítulo", value: nl.subtitle, type: "textarea" },
+              ]}
+            >
+              <RenderSection section={s} tenantId={tenantId} />
+            </Editable>
+          );
+        }
+
+        const c = (s.config ?? {}) as SectionConfig;
+        const f = editFields(s.type, c);
+        if (!f) return node;
+        return (
+          <Editable
+            key={s.id}
+            title={SECTION_LABELS[s.type] ?? "Sección"}
+            kind="section"
+            id={s.id}
+            fields={f}
+          >
+            <RenderSection section={s} tenantId={tenantId} />
+          </Editable>
+        );
+      })}
     </>
   );
 }
