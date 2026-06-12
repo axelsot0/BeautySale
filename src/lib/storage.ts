@@ -4,7 +4,12 @@ import { createServiceClient } from "@/lib/supabase/service";
 const ALLOWED_MIME = ["image/jpeg", "image/png", "image/webp", "image/avif"];
 const MAX_BYTES = 5 * 1024 * 1024; // 5MB
 
-export type UploadBucket = "product-images" | "banner-images" | "category-images" | "brand-assets";
+export type UploadBucket =
+  | "product-images"
+  | "banner-images"
+  | "category-images"
+  | "brand-assets"
+  | "section-images";
 
 function randomKey(prefix: string, ext: string) {
   const id = crypto.randomUUID();

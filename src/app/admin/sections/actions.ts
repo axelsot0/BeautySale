@@ -5,7 +5,14 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { getAdminUser } from "@/lib/auth";
 import { getAdminTenantId, getAdminMembership } from "@/lib/tenant-context";
 import { getTenantStatus } from "@/lib/demo-server";
-import { defaultConfig, parseCustomBlocks, MAX_CUSTOM_BLOCKS, type SectionType, type SectionConfig } from "@/lib/sections";
+import {
+  defaultConfig,
+  parseCustomBlocks,
+  MAX_CUSTOM_BLOCKS,
+  type SectionType,
+  type SectionConfig,
+} from "@/lib/sections";
+import { uploadImage } from "@/lib/storage";
 
 async function ensureAdmin(): Promise<number> {
   const u = await getAdminUser();
@@ -13,7 +20,14 @@ async function ensureAdmin(): Promise<number> {
   return getAdminTenantId();
 }
 
-// Secciones personalizadas: solo plan Pro (developers siempre pueden).
+async function canEditSections(tenantId: number): Promise<boolean> {
+  const m = await getAdminMembership();
+  if (m?.role === "developer") return true;
+  const status = await getTenantStatus(tenantId);
+  return !status.isDemo;
+}
+
+// Custom sections are Pro-only. Developers can always edit them.
 async function canUseCustomSections(tenantId: number): Promise<boolean> {
   const m = await getAdminMembership();
   if (m?.role === "developer") return true;
@@ -26,10 +40,20 @@ function revalidate() {
   revalidatePath("/", "layout");
 }
 
-const TYPES: SectionType[] = ["banner", "product_carousel", "mosaic", "flash_sale", "brand_strip", "newsletter", "custom"];
+const TYPES: SectionType[] = [
+  "banner",
+  "product_carousel",
+  "mosaic",
+  "flash_sale",
+  "brand_strip",
+  "newsletter",
+  "custom",
+];
 
 export async function addSection(formData: FormData) {
   const tenantId = await ensureAdmin();
+  if (!(await canEditSections(tenantId))) return;
+
   const type = String(formData.get("type") ?? "") as SectionType;
   if (!TYPES.includes(type)) return;
   if (type === "custom" && !(await canUseCustomSections(tenantId))) return;
@@ -52,6 +76,8 @@ export async function addSection(formData: FormData) {
 
 export async function deleteSection(formData: FormData) {
   const tenantId = await ensureAdmin();
+  if (!(await canEditSections(tenantId))) return;
+
   const id = String(formData.get("id") ?? "");
   if (!id) return;
   const supabase = createServiceClient();
@@ -61,6 +87,8 @@ export async function deleteSection(formData: FormData) {
 
 export async function toggleSection(formData: FormData) {
   const tenantId = await ensureAdmin();
+  if (!(await canEditSections(tenantId))) return;
+
   const id = String(formData.get("id") ?? "");
   const active = formData.get("active") === "true";
   if (!id) return;
@@ -71,6 +99,8 @@ export async function toggleSection(formData: FormData) {
 
 export async function moveSection(formData: FormData) {
   const tenantId = await ensureAdmin();
+  if (!(await canEditSections(tenantId))) return;
+
   const id = String(formData.get("id") ?? "");
   const dir = String(formData.get("dir") ?? "");
   if (!id) return;
@@ -94,9 +124,10 @@ export async function moveSection(formData: FormData) {
   revalidate();
 }
 
-// Reordena todas las secciones según la lista de ids (drag & drop).
 export async function reorderSections(formData: FormData) {
   const tenantId = await ensureAdmin();
+  if (!(await canEditSections(tenantId))) return;
+
   let ids: string[];
   try {
     ids = JSON.parse(String(formData.get("ids") ?? "[]"));
@@ -106,7 +137,6 @@ export async function reorderSections(formData: FormData) {
   if (!Array.isArray(ids) || ids.length === 0) return;
 
   const supabase = createServiceClient();
-  // Solo ids que pertenecen al tenant (ignora inyectados)
   const { data: own } = await supabase
     .from("sections")
     .select("id")
@@ -124,6 +154,8 @@ export async function reorderSections(formData: FormData) {
 
 export async function updateSection(formData: FormData) {
   const tenantId = await ensureAdmin();
+  if (!(await canEditSections(tenantId))) return;
+
   const id = String(formData.get("id") ?? "");
   const type = String(formData.get("type") ?? "") as SectionType;
   if (!id) return;
@@ -135,12 +167,11 @@ export async function updateSection(formData: FormData) {
 
   const supabase = createServiceClient();
 
-  // newsletter config writes to tenants, not sections.config
   if (type === "newsletter") {
     const pct = parseInt(String(formData.get("discount_pct") ?? "10"), 10);
     await supabase.from("tenants").update({
-      newsletter_title:        g("title") ?? null,
-      newsletter_subtitle:     g("subtitle") ?? null,
+      newsletter_title: g("title") ?? null,
+      newsletter_subtitle: g("subtitle") ?? null,
       newsletter_discount_pct: isNaN(pct) ? 10 : Math.max(1, Math.min(100, pct)),
     }).eq("id", tenantId);
     revalidate();
@@ -150,27 +181,32 @@ export async function updateSection(formData: FormData) {
   let config: SectionConfig = {};
   if (type === "custom") {
     if (!(await canUseCustomSections(tenantId))) return;
-    // Re-serializa tras validar estructura y tope de bloques
     const blocks = parseCustomBlocks(String(formData.get("blocks_json") ?? "")).slice(0, MAX_CUSTOM_BLOCKS);
     config = { blocks_json: JSON.stringify(blocks) };
     await supabase.from("sections").update({ config }).eq("id", id).eq("tenant_id", tenantId);
     revalidate();
     return;
   }
+
   switch (type) {
     case "banner":
       config = {
-        title:     g("title"),
-        subtitle:  g("subtitle"),
+        title: g("title"),
+        subtitle: g("subtitle"),
         image_url: g("image_url"),
         cta_label: g("cta_label"),
-        cta_link:  g("cta_link"),
-        bg_color:  g("bg_color") || "#FF4D8B",
+        cta_link: g("cta_link"),
+        bg_color: g("bg_color") || "#FF4D8B",
       };
       break;
     case "product_carousel": {
       const source = String(formData.get("source") ?? "featured") === "category" ? "category" : "featured";
-      config = { source, category_slug: source === "category" ? g("category_slug") : undefined, eyebrow: g("eyebrow"), title: g("title") };
+      config = {
+        source,
+        category_slug: source === "category" ? g("category_slug") : undefined,
+        eyebrow: g("eyebrow"),
+        title: g("title"),
+      };
       break;
     }
     case "mosaic":
@@ -184,30 +220,18 @@ export async function updateSection(formData: FormData) {
   revalidate();
 }
 
-// Upload an image to Supabase storage bucket "section-images".
-// Returns { url } on success or { error } on failure.
 export async function uploadSectionImage(
   formData: FormData,
 ): Promise<{ url?: string; error?: string }> {
   const tenantId = await ensureAdmin();
-  const file = formData.get("file") as File | null;
-  if (!file || !file.size) return { error: "Sin archivo" };
+  if (!(await canEditSections(tenantId))) return { error: "Disponible al activar tu tienda." };
 
-  const ext = (file.name.split(".").pop() ?? "jpg").toLowerCase();
-  const allowed = ["jpg", "jpeg", "png", "webp", "gif", "svg"];
-  if (!allowed.includes(ext)) return { error: "Formato no soportado (jpg, png, webp, gif)" };
-  if (file.size > 5 * 1024 * 1024) return { error: "Máximo 5 MB" };
+  const file = formData.get("file");
+  if (!(file instanceof File) || !file.size) return { error: "Sin archivo" };
 
-  const path = `${tenantId}/${crypto.randomUUID()}.${ext}`;
-  const buffer = await file.arrayBuffer();
-
-  const supabase = createServiceClient();
-  const { error: uploadError } = await supabase.storage
-    .from("section-images")
-    .upload(path, buffer, { contentType: file.type, upsert: false });
-
-  if (uploadError) return { error: uploadError.message };
-
-  const { data: { publicUrl } } = supabase.storage.from("section-images").getPublicUrl(path);
-  return { url: publicUrl };
+  try {
+    return { url: await uploadImage(file, "section-images", String(tenantId)) };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Error al subir" };
+  }
 }

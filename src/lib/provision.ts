@@ -18,24 +18,41 @@ export type ProvisionResult =
   | { ok: true; tenantId: number; userId: string; slug: string }
   | { ok: false; error: string };
 
+type ServiceClient = ReturnType<typeof createServiceClient>;
+
+async function cleanupProvision(
+  supabase: ServiceClient,
+  input: { tenantId?: number; authUserId?: string; deleteAuthUser?: boolean },
+) {
+  if (input.tenantId) {
+    await supabase.from("tenants").delete().eq("id", input.tenantId);
+  }
+
+  if (input.authUserId && input.deleteAuthUser) {
+    try {
+      await supabase.auth.admin.deleteUser(input.authUserId);
+    } catch {
+      // Best effort. The original error is more useful to the caller.
+    }
+  }
+}
+
 // Provisions a store end-to-end: tenant + superadmin auth user + membership.
 // Shared by the developer panel (isDemo=false) and public signup (isDemo=true).
 export async function provisionStore(input: ProvisionInput): Promise<ProvisionResult> {
   const email = input.email.trim().toLowerCase();
   const slug = slugify(input.slug || input.store_name);
-  if (!slug) return { ok: false, error: "Slug inválido" };
+  if (!slug) return { ok: false, error: "Slug invalido" };
 
   const supabase = createServiceClient();
 
-  // Slug must be free.
   const { data: slugTaken } = await supabase
     .from("tenants")
     .select("id")
     .eq("slug", slug)
     .maybeSingle();
-  if (slugTaken) return { ok: false, error: `El nombre "${slug}" ya está en uso, probá otro` };
+  if (slugTaken) return { ok: false, error: `El nombre "${slug}" ya esta en uso, proba otro` };
 
-  // Email must not already be an admin.
   const { data: emailTaken } = await supabase
     .from("admins")
     .select("id")
@@ -43,16 +60,11 @@ export async function provisionStore(input: ProvisionInput): Promise<ProvisionRe
     .maybeSingle();
   if (emailTaken) return { ok: false, error: "Ese email ya pertenece a una cuenta" };
 
-  // Create or reuse the auth user.
   const { data: authList } = await supabase.auth.admin.listUsers();
   let authUser = authList.users.find((u) => u.email?.toLowerCase() === email);
-  if (authUser) {
-    await supabase.auth.admin.updateUserById(authUser.id, {
-      password: input.password,
-      email_confirm: true,
-      user_metadata: { ...(authUser.user_metadata ?? {}), full_name: input.full_name, is_admin: true },
-    });
-  } else {
+  const createdAuthUser = !authUser;
+
+  if (!authUser) {
     const { data, error } = await supabase.auth.admin.createUser({
       email,
       password: input.password,
@@ -67,8 +79,7 @@ export async function provisionStore(input: ProvisionInput): Promise<ProvisionRe
     ? new Date(Date.now() + DEMO_DURATION_DAYS * 24 * 60 * 60 * 1000).toISOString()
     : null;
 
-  // Create the tenant owned by this superadmin.
-  const { data: tenant, error: tErr } = await supabase
+  const { data: tenant, error: tenantErr } = await supabase
     .from("tenants")
     .insert({
       slug,
@@ -81,21 +92,12 @@ export async function provisionStore(input: ProvisionInput): Promise<ProvisionRe
     })
     .select("id")
     .single();
-  if (tErr || !tenant) return { ok: false, error: `No se pudo crear la tienda: ${tErr?.message ?? "?"}` };
+  if (tenantErr || !tenant) {
+    await cleanupProvision(supabase, { authUserId: authUser.id, deleteAuthUser: createdAuthUser });
+    return { ok: false, error: `No se pudo crear la tienda: ${tenantErr?.message ?? "?"}` };
+  }
 
-  // Authoritative claims on the JWT.
-  await supabase.auth.admin.updateUserById(authUser.id, {
-    app_metadata: {
-      ...(authUser.app_metadata ?? {}),
-      is_admin: true,
-      role: "superadmin",
-      tenant_id: tenant.id,
-      active: true,
-    },
-  });
-
-  // Membership row.
-  const { error: mErr } = await supabase.from("admins").insert({
+  const { error: membershipErr } = await supabase.from("admins").insert({
     user_id: authUser.id,
     email,
     full_name: input.full_name,
@@ -104,14 +106,44 @@ export async function provisionStore(input: ProvisionInput): Promise<ProvisionRe
     active: true,
     created_by: input.createdBy ?? null,
   });
-  if (mErr) return { ok: false, error: `No se pudo crear la membresía: ${mErr.message}` };
+  if (membershipErr) {
+    await cleanupProvision(supabase, {
+      tenantId: tenant.id,
+      authUserId: authUser.id,
+      deleteAuthUser: createdAuthUser,
+    });
+    return { ok: false, error: `No se pudo crear la membresia: ${membershipErr.message}` };
+  }
+
+  const { error: authUpdateErr } = await supabase.auth.admin.updateUserById(authUser.id, {
+    ...(createdAuthUser ? {} : { password: input.password, email_confirm: true }),
+    user_metadata: {
+      ...(authUser.user_metadata ?? {}),
+      full_name: input.full_name,
+      is_admin: true,
+    },
+    app_metadata: {
+      ...(authUser.app_metadata ?? {}),
+      is_admin: true,
+      role: "superadmin",
+      tenant_id: tenant.id,
+      active: true,
+    },
+  });
+  if (authUpdateErr) {
+    await cleanupProvision(supabase, {
+      tenantId: tenant.id,
+      authUserId: authUser.id,
+      deleteAuthUser: createdAuthUser,
+    });
+    return { ok: false, error: `No se pudieron actualizar claims: ${authUpdateErr.message}` };
+  }
 
   return { ok: true, tenantId: tenant.id, userId: authUser.id, slug };
 }
 
-// Fully removes a tenant: the tenants row cascades to all tenant_id-scoped
-// tables (products, categories, banners, news, orders, brands, sections,
-// flash_sale, admins, newsletter_subscribers). Auth users are deleted after.
+// Fully removes a tenant. The tenants row cascades to tenant_id-scoped tables.
+// Auth users are deleted after the database rows are gone.
 export async function deleteTenantCascade(tenantId: number): Promise<void> {
   const supabase = createServiceClient();
 
@@ -120,17 +152,14 @@ export async function deleteTenantCascade(tenantId: number): Promise<void> {
     .select("user_id, role")
     .eq("tenant_id", tenantId);
 
-  // Delete the tenant — DB cascade clears every child row (incl. admins).
   await supabase.from("tenants").delete().eq("id", tenantId);
 
-  // Remove the auth users that belonged to this store (best-effort). Never
-  // delete a developer account.
   for (const m of members ?? []) {
     if (m.user_id && m.role !== "developer") {
       try {
         await supabase.auth.admin.deleteUser(m.user_id);
       } catch {
-        // ignore — auth user may already be gone
+        // ignore; auth user may already be gone
       }
     }
   }

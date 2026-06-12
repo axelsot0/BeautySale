@@ -7,6 +7,7 @@ import { getAdminTenantId, getAdminMembership } from "@/lib/tenant-context";
 import { uploadImage, deleteImageByUrl } from "@/lib/storage";
 import { parsePalette, type Palette } from "@/lib/theme";
 import { SOCIAL_NETWORKS, type SocialLinks } from "@/lib/social";
+import { getTenantStatus } from "@/lib/demo-server";
 
 async function ensureAdmin(): Promise<number> {
   const u = await getAdminUser();
@@ -23,9 +24,18 @@ function revalidateAll(id: string) {
 
 export type ThemeState = { ok?: boolean; error?: string };
 
+async function ensureThemeAccess(tenantId: number): Promise<ThemeState | null> {
+  const m = await getAdminMembership();
+  if (m?.role === "developer") return null;
+  const status = await getTenantStatus(tenantId);
+  return status.isDemo ? { error: "Disponible al activar tu tienda." } : null;
+}
+
 // Save a palette (preset or custom). Validates all 11 hex tokens server-side.
 export async function saveTheme(_prev: ThemeState, formData: FormData): Promise<ThemeState> {
   const tenantId = await ensureAdmin();
+  const blocked = await ensureThemeAccess(tenantId);
+  if (blocked) return blocked;
 
   let raw: unknown;
   try {
@@ -51,6 +61,8 @@ export async function saveTheme(_prev: ThemeState, formData: FormData): Promise<
 // Reset to the built-in default palette (theme = null → fallback to DEFAULT_PALETTE).
 export async function resetTheme(): Promise<ThemeState> {
   const tenantId = await ensureAdmin();
+  const blocked = await ensureThemeAccess(tenantId);
+  if (blocked) return blocked;
   const supabase = createServiceClient();
   const { error } = await supabase.from("tenants").update({ theme: null }).eq("id", tenantId);
   if (error) return { error: error.message };
@@ -61,6 +73,8 @@ export async function resetTheme(): Promise<ThemeState> {
 // Save a (already background-removed) logo PNG. Replaces the previous one.
 export async function saveLogo(_prev: ThemeState, formData: FormData): Promise<ThemeState> {
   const tenantId = await ensureAdmin();
+  const blocked = await ensureThemeAccess(tenantId);
+  if (blocked) return blocked;
 
   const file = formData.get("logo");
   if (!(file instanceof File) || file.size === 0) return { error: "Sin archivo" };
@@ -91,6 +105,8 @@ export async function saveLogo(_prev: ThemeState, formData: FormData): Promise<T
 // Save the platform/site name. Empty => reset to default (null).
 export async function saveSiteName(_prev: ThemeState, formData: FormData): Promise<ThemeState> {
   const tenantId = await ensureAdmin();
+  const blocked = await ensureThemeAccess(tenantId);
+  if (blocked) return blocked;
   const raw = String(formData.get("site_name") ?? "").trim();
   if (raw.length > 40) return { error: "Máximo 40 caracteres" };
 
@@ -127,6 +143,8 @@ export async function saveEditorialHeading(
   formData: FormData,
 ): Promise<ThemeState> {
   const tenantId = await ensureAdmin();
+  const blocked = await ensureThemeAccess(tenantId);
+  if (blocked) return blocked;
   const eyebrow = String(formData.get("editorial_eyebrow") ?? "").trim();
   const title = String(formData.get("editorial_title") ?? "").trim();
   if (eyebrow.length > 60 || title.length > 80) return { error: "Texto demasiado largo" };
@@ -145,6 +163,8 @@ export async function saveEditorialHeading(
 // Save footer social links (active + url per network).
 export async function saveSocialLinks(_prev: ThemeState, formData: FormData): Promise<ThemeState> {
   const tenantId = await ensureAdmin();
+  const blocked = await ensureThemeAccess(tenantId);
+  if (blocked) return blocked;
 
   const links = {} as SocialLinks;
   for (const n of SOCIAL_NETWORKS) {
@@ -164,6 +184,8 @@ export async function saveSocialLinks(_prev: ThemeState, formData: FormData): Pr
 
 export async function removeLogo(): Promise<ThemeState> {
   const tenantId = await ensureAdmin();
+  const blocked = await ensureThemeAccess(tenantId);
+  if (blocked) return blocked;
   const supabase = createServiceClient();
   const { data: prev } = await supabase
     .from("tenants")
