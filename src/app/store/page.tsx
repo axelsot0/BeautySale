@@ -25,6 +25,8 @@ import { canEditStorefront } from "@/lib/edit-access";
 import { getSections } from "@/lib/data/sections-query";
 import { SectionStack } from "@/components/storefront/SectionStack";
 import { DemoWatermark } from "@/components/storefront/DemoWatermark";
+import { DemoPaletteSwitcher } from "@/components/storefront/DemoPaletteSwitcher";
+import { DEFAULT_TENANT_ID } from "@/lib/tenant";
 import { EditModeProvider } from "@/components/storefront/edit/EditMode";
 import { Editable, type EditableField } from "@/components/storefront/edit/Editable";
 import { HeaderEdit, NewsEdit, FooterEdit } from "@/components/storefront/edit/RegionEditors";
@@ -192,5 +194,13 @@ export default async function Home() {
     );
   }
 
-  return canEdit ? <EditModeProvider>{content}</EditModeProvider> : content;
+  // Showcase: la tienda demo de la plataforma muestra el probador de paletas
+  const withExtras = (
+    <>
+      {content}
+      {t === DEFAULT_TENANT_ID && <DemoPaletteSwitcher />}
+    </>
+  );
+
+  return canEdit ? <EditModeProvider>{withExtras}</EditModeProvider> : withExtras;
 }
