@@ -3,6 +3,7 @@ import {
   ArrowRight, Check,
 } from "lucide-react";
 import { ProPromoForm } from "./ProPromoForm";
+import { DemoPortalButton } from "./DemoPortalButton";
 import { PLAN_PRICES, PRO_DISCOUNT_PCT } from "@/lib/plans";
 
 export const dynamic = "force-dynamic";
@@ -89,9 +90,7 @@ export default function LandingPage() {
             <a href="/signup" className="inline-flex items-center justify-center gap-2 rounded-full bg-pink px-7 py-3.5 font-bold text-cream hover:shadow-[0_0_24px_rgba(255,77,139,0.4)] transition">
               Crear mi tienda gratis <ArrowRight className="h-4 w-4" />
             </a>
-            <a href="/t/beautysale" className="inline-flex items-center justify-center gap-2 rounded-full border border-plum/15 px-7 py-3.5 font-semibold hover:bg-plum/5 transition">
-              <Store className="h-4 w-4" /> Ver demo en vivo
-            </a>
+            <DemoPortalButton />
           </div>
           <p className="text-xs text-plum-soft mt-4">Sin tarjeta de crédito · Modo demo por 15 días</p>
         </div>
