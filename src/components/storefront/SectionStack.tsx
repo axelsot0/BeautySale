@@ -17,6 +17,7 @@ import { FlashSale } from "./FlashSale";
 import { BrandStrip } from "./BrandStrip";
 import { NewsletterForm } from "./NewsletterForm";
 import { Editable, type EditableField } from "./edit/Editable";
+import { SectionDnD } from "./edit/SectionDnD";
 
 // Campos editables inline por tipo de sección (modo edición).
 function editFields(type: string, c: SectionConfig): EditableField[] | null {
@@ -205,43 +206,44 @@ export async function SectionStack({
       ? await getNewsletterConfig(tenantId)
       : null;
 
-  return (
-    <>
-      {sections.map((s) => {
-        const node = <RenderSection key={s.id} section={s} tenantId={tenantId} />;
-        if (!editable) return node;
+  const items = sections.map((s) => {
+    const node = <RenderSection key={s.id} section={s} tenantId={tenantId} />;
+    if (!editable) return node;
 
-        if (s.type === "newsletter" && nl) {
-          return (
-            <Editable
-              key={s.id}
-              title="Newsletter"
-              kind="newsletter"
-              fields={[
-                { name: "title", label: "Título", value: nl.title },
-                { name: "subtitle", label: "Subtítulo", value: nl.subtitle, type: "textarea" },
-              ]}
-            >
-              <RenderSection section={s} tenantId={tenantId} />
-            </Editable>
-          );
-        }
+    if (s.type === "newsletter" && nl) {
+      return (
+        <Editable
+          key={s.id}
+          title="Newsletter"
+          kind="newsletter"
+          fields={[
+            { name: "title", label: "Título", value: nl.title },
+            { name: "subtitle", label: "Subtítulo", value: nl.subtitle, type: "textarea" },
+          ]}
+        >
+          <RenderSection section={s} tenantId={tenantId} />
+        </Editable>
+      );
+    }
 
-        const c = (s.config ?? {}) as SectionConfig;
-        const f = editFields(s.type, c);
-        if (!f) return node;
-        return (
-          <Editable
-            key={s.id}
-            title={SECTION_LABELS[s.type] ?? "Sección"}
-            kind="section"
-            id={s.id}
-            fields={f}
-          >
-            <RenderSection section={s} tenantId={tenantId} />
-          </Editable>
-        );
-      })}
-    </>
-  );
+    const c = (s.config ?? {}) as SectionConfig;
+    const f = editFields(s.type, c);
+    if (!f) return node;
+    return (
+      <Editable
+        key={s.id}
+        title={SECTION_LABELS[s.type] ?? "Sección"}
+        kind="section"
+        id={s.id}
+        fields={f}
+      >
+        <RenderSection section={s} tenantId={tenantId} />
+      </Editable>
+    );
+  });
+
+  if (!editable) return <>{items}</>;
+
+  // Drag & drop para reubicar secciones (topbar y footer quedan fijos)
+  return <SectionDnD ids={sections.map((s) => s.id)}>{items}</SectionDnD>;
 }

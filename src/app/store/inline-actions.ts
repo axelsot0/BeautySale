@@ -98,8 +98,111 @@ export async function inlineSave(formData: FormData): Promise<InlineState> {
       })
       .eq("id", tenantId);
     if (error) return { error: error.message };
+  } else if (kind === "header") {
+    const site_name = text(formData, "site_name", 60);
+    let nav: unknown;
+    try {
+      nav = JSON.parse(String(formData.get("nav_links") ?? "[]"));
+    } catch {
+      return { error: "Formato inválido" };
+    }
+    if (!Array.isArray(nav)) return { error: "Formato inválido" };
+    const links = (nav as Record<string, unknown>[])
+      .slice(0, 12)
+      .map((l) => ({
+        label: String(l.label ?? "").trim().slice(0, 40),
+        href: String(l.href ?? "").trim().slice(0, 500),
+        highlight: l.highlight === true,
+      }))
+      .filter((l) => l.label && l.href);
+    const { error } = await supabase
+      .from("tenants")
+      .update({ site_name: site_name || null, nav_links: links })
+      .eq("id", tenantId);
+    if (error) return { error: error.message };
+  } else if (kind === "news") {
+    let items: unknown;
+    try {
+      items = JSON.parse(String(formData.get("items") ?? "[]"));
+    } catch {
+      return { error: "Formato inválido" };
+    }
+    if (!Array.isArray(items)) return { error: "Formato inválido" };
+    const texts = (items as unknown[])
+      .map((t) => String(t).trim().slice(0, 120))
+      .filter(Boolean)
+      .slice(0, 12);
+    // Reemplazo completo del ticker del tenant
+    await supabase.from("news").delete().eq("tenant_id", tenantId);
+    if (texts.length > 0) {
+      const { error } = await supabase
+        .from("news")
+        .insert(texts.map((t, i) => ({ tenant_id: tenantId, text: t, active: true, position: i })));
+      if (error) return { error: error.message };
+    }
+  } else if (kind === "footer") {
+    const parseLinks = (raw: string): { label: string; href: string }[] | null => {
+      try {
+        const arr = JSON.parse(raw);
+        if (!Array.isArray(arr)) return null;
+        return (arr as Record<string, unknown>[])
+          .slice(0, 12)
+          .map((l) => ({
+            label: String(l.label ?? "").trim().slice(0, 60),
+            href: String(l.href ?? "").trim().slice(0, 500),
+          }))
+          .filter((l) => l.label && l.href);
+      } catch {
+        return null;
+      }
+    };
+    const contact = parseLinks(String(formData.get("contact") ?? "[]"));
+    const nosotros = parseLinks(String(formData.get("nosotros") ?? "[]"));
+    if (!contact || !nosotros) return { error: "Formato inválido" };
+    const payments = text(formData, "payments", 300)
+      .split(",")
+      .map((p) => p.trim())
+      .filter(Boolean)
+      .slice(0, 10);
+    const { error } = await supabase
+      .from("tenants")
+      .update({
+        footer_description: text(formData, "description", 300) || null,
+        footer_contact: contact,
+        footer_nosotros: nosotros,
+        footer_payments: payments,
+        newsletter_title: text(formData, "newsletter_title", 80) || null,
+        newsletter_subtitle: text(formData, "newsletter_subtitle", 200) || null,
+      })
+      .eq("id", tenantId);
+    if (error) return { error: error.message };
   } else {
     return { error: "Tipo desconocido" };
+  }
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+// Reordena las secciones del home (drag & drop del modo edición).
+export async function inlineReorderSections(ids: string[]): Promise<InlineState> {
+  let tenantId: number;
+  try {
+    tenantId = await requireEditTenant();
+  } catch {
+    return { error: "No autorizado" };
+  }
+  if (!Array.isArray(ids) || ids.length === 0 || ids.length > 50) {
+    return { error: "Orden inválido" };
+  }
+
+  const supabase = createServiceClient();
+  const { data } = await supabase.from("sections").select("id").eq("tenant_id", tenantId);
+  const valid = new Set((data ?? []).map((r) => r.id as string));
+  if (!ids.every((id) => valid.has(id))) return { error: "Sección inválida" };
+
+  for (let i = 0; i < ids.length; i++) {
+    await supabase.from("sections").update({ position: i }).eq("id", ids[i]).eq("tenant_id", tenantId);
   }
 
   revalidatePath("/", "layout");

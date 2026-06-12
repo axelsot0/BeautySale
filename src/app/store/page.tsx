@@ -18,6 +18,7 @@ import {
   getBrands,
   getEditorialHeading,
 } from "@/lib/data/queries";
+import { getActiveTheme, getFooterConfig, getNewsletterConfig } from "@/lib/data/theme-query";
 import { getStorefrontTenantId } from "@/lib/tenant-context";
 import { getTenantStatus } from "@/lib/demo-server";
 import { canEditStorefront } from "@/lib/edit-access";
@@ -26,6 +27,7 @@ import { SectionStack } from "@/components/storefront/SectionStack";
 import { DemoWatermark } from "@/components/storefront/DemoWatermark";
 import { EditModeProvider } from "@/components/storefront/edit/EditMode";
 import { Editable, type EditableField } from "@/components/storefront/edit/Editable";
+import { HeaderEdit, NewsEdit, FooterEdit } from "@/components/storefront/edit/RegionEditors";
 import type { Banner } from "@/lib/data/types";
 
 export const dynamic = "force-dynamic";
@@ -45,44 +47,84 @@ function heroFields(b: Banner): EditableField[] {
 
 export default async function Home() {
   const t = await getStorefrontTenantId();
-  const [{ isDemo }, canEdit] = await Promise.all([getTenantStatus(t), canEditStorefront(t)]);
+  const [{ isDemo }, canEdit, sections] = await Promise.all([
+    getTenantStatus(t),
+    canEditStorefront(t),
+    getSections(t),
+  ]);
 
-  // If the store has a custom section stack, render it (Hero on top, footer at
-  // the bottom). Otherwise fall back to the built-in default layout.
-  const sections = await getSections(t);
+  const [news, heroBanners, theme, footerCfg, nlCfg] = await Promise.all([
+    getNews(t),
+    getBanners("hero", t),
+    canEdit ? getActiveTheme(t) : null,
+    canEdit ? getFooterConfig(t) : null,
+    canEdit ? getNewsletterConfig(t) : null,
+  ]);
+  const heroBanner = heroBanners[0] ?? null;
+
+  // Regiones fijas, editables en modo edición
+  const newsBarNode = canEdit ? (
+    <NewsEdit items={news.map((n) => n.text)}>
+      <NewsBar items={news} />
+    </NewsEdit>
+  ) : (
+    <NewsBar items={news} />
+  );
+
+  const headerNode =
+    canEdit && theme ? (
+      <HeaderEdit siteName={theme.siteName} navLinks={theme.navLinks}>
+        <SiteHeader />
+      </HeaderEdit>
+    ) : (
+      <SiteHeader />
+    );
+
+  const footerNode =
+    canEdit && footerCfg && nlCfg ? (
+      <FooterEdit
+        description={footerCfg.description}
+        contact={footerCfg.contact}
+        nosotros={footerCfg.nosotros}
+        payments={footerCfg.payments}
+        newsletterTitle={nlCfg.title}
+        newsletterSubtitle={nlCfg.subtitle}
+      >
+        <Footer />
+      </FooterEdit>
+    ) : (
+      <Footer />
+    );
+
+  const heroNode = heroBanner && (
+    canEdit ? (
+      <Editable title="Hero" kind="hero" id={heroBanner.id} fields={heroFields(heroBanner)}>
+        <Hero banner={heroBanner} />
+      </Editable>
+    ) : (
+      <Hero banner={heroBanner} />
+    )
+  );
 
   let content: React.ReactNode;
 
   if (sections.length > 0) {
-    const [news, heroBanners] = await Promise.all([getNews(t), getBanners("hero", t)]);
-    const heroBanner = heroBanners[0] ?? null;
-    const hero = heroBanner && (
-      canEdit ? (
-        <Editable title="Hero" kind="hero" id={heroBanner.id} fields={heroFields(heroBanner)}>
-          <Hero banner={heroBanner} />
-        </Editable>
-      ) : (
-        <Hero banner={heroBanner} />
-      )
-    );
     content = (
       <>
         {isDemo && <DemoWatermark />}
-        <NewsBar items={news} />
-        <SiteHeader />
+        {newsBarNode}
+        {headerNode}
         <main className="flex-1">
-          {hero}
+          {heroNode}
           <SectionStack sections={sections} tenantId={t} editable={canEdit} />
         </main>
-        <Footer />
+        {footerNode}
       </>
     );
   } else {
-    const [news, categories, heroBanners, mosaicBanners, featured, cuidado, ojos, flashSale, brands] =
+    const [categories, mosaicBanners, featured, cuidado, ojos, flashSale, brands] =
       await Promise.all([
-        getNews(t),
         getCategories(t),
-        getBanners("hero", t),
         getBanners("mosaic", t),
         getFeaturedProducts(8, t),
         getProductsByCategory("cuidado-personal", 6, t),
@@ -90,21 +132,10 @@ export default async function Home() {
         getActiveFlashSale(t),
         getBrands(t),
       ]);
-    const heroBanner = heroBanners[0] ?? null;
     const editorial = await getEditorialHeading(t);
 
     const cuidadoCat = categories.find((c) => c.slug === "cuidado-personal");
     const ojosCat = categories.find((c) => c.slug === "ojos");
-
-    const hero = heroBanner && (
-      canEdit ? (
-        <Editable title="Hero" kind="hero" id={heroBanner.id} fields={heroFields(heroBanner)}>
-          <Hero banner={heroBanner} />
-        </Editable>
-      ) : (
-        <Hero banner={heroBanner} />
-      )
-    );
 
     const mosaic = (
       <Mosaic banners={mosaicBanners} eyebrow={editorial.eyebrow} title={editorial.title} />
@@ -113,10 +144,10 @@ export default async function Home() {
     content = (
       <>
         {isDemo && <DemoWatermark />}
-        <NewsBar items={news} />
-        <SiteHeader />
+        {newsBarNode}
+        {headerNode}
         <main className="flex-1">
-          {hero}
+          {heroNode}
           <CategoryChips categories={categories} />
           <TopSellers products={featured} />
           {cuidadoCat && (
@@ -154,7 +185,7 @@ export default async function Home() {
           {flashSale && <FlashSale data={flashSale} />}
           <BrandStrip brands={brands} />
         </main>
-        <Footer />
+        {footerNode}
       </>
     );
   }
