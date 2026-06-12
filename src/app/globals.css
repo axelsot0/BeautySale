@@ -67,36 +67,7 @@ body {
   animation: fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* Botón portal del demo (landing): borde degradado girando en sentido horario.
-   El ángulo del conic-gradient se anima vía @property (Chrome/Edge/Safari 16+);
-   sin soporte, queda el degradado estático — degradación elegante. */
-@property --portal-angle {
-  syntax: "<angle>";
-  initial-value: 0deg;
-  inherits: false;
-}
-
-.portal-ring {
-  background: conic-gradient(
-    from var(--portal-angle),
-    #ffe4cc 0%,
-    #fff1e5 25%,
-    #ffe4cc 50%,
-    #fff1e5 75%,
-    #ffe4cc 100%
-  );
-  animation: portal-rotate 3s linear infinite;
-}
-
-.portal-ring-fast {
-  animation-duration: 1.4s;
-}
-
-@keyframes portal-rotate {
-  to { --portal-angle: 360deg; }
-}
-
-/* Pulso de brillo del portal abierto */
+/* Pulso de brillo del portal abierto (botón demo de la landing) */
 @keyframes portal-glow {
   0%, 100% { box-shadow: 0 24px 64px rgba(74, 37, 17, 0.45), 0 0 24px rgba(255, 228, 204, 0.35); }
   50%      { box-shadow: 0 24px 64px rgba(74, 37, 17, 0.45), 0 0 48px rgba(255, 241, 229, 0.65); }
