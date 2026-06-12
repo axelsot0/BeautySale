@@ -31,11 +31,10 @@ export function DemoPortalButton() {
       {/* Botón */}
       <a
         href={DEMO_URL}
-        className="relative inline-flex overflow-hidden rounded-full p-[2.5px] transition-transform hover:scale-[1.03] active:scale-[0.98]"
+        className="portal-ring relative inline-flex rounded-full p-[2.5px] transition-transform hover:scale-[1.03] active:scale-[0.98]"
       >
-        <span className="portal-spin" aria-hidden="true" />
         <span
-          className="relative z-10 inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 font-semibold"
+          className="inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 font-semibold"
           style={{ backgroundColor: "#4A2511", color: "#ffe4cc" }}
         >
           <Store className="h-4 w-4" /> Ver demo en vivo
@@ -52,9 +51,8 @@ export function DemoPortalButton() {
       >
         <a
           href={DEMO_URL}
-          className="portal-glow relative block overflow-hidden rounded-[26px] p-[3px]"
+          className="portal-ring portal-ring-fast portal-glow relative block rounded-[26px] p-[3px]"
         >
-          <span className="portal-spin portal-spin-fast" aria-hidden="true" />
           <span
             className="relative z-10 block overflow-hidden rounded-[23px]"
             style={{ backgroundColor: "#4A2511" }}
