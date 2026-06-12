@@ -9,6 +9,8 @@ import { ProductSearch } from "./ProductSearch";
 
 export const dynamic = "force-dynamic";
 
+export { storeMetadata as generateMetadata } from "@/lib/store-metadata";
+
 async function getAllProducts(tenantId: number) {
   const supabase = createServiceClient();
   const { data, error } = await supabase

@@ -11,6 +11,8 @@ import { Footer } from "@/components/storefront/Footer";
 
 export const dynamic = "force-dynamic";
 
+export { storeMetadata as generateMetadata } from "@/lib/store-metadata";
+
 export default async function ProductPage({
   params,
 }: {

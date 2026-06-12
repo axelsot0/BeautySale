@@ -32,6 +32,8 @@ import type { Banner } from "@/lib/data/types";
 
 export const dynamic = "force-dynamic";
 
+export { storeMetadata as generateMetadata } from "@/lib/store-metadata";
+
 function heroFields(b: Banner): EditableField[] {
   return [
     { name: "eyebrow_text", label: "Etiqueta superior", value: b.eyebrow_text ?? "" },

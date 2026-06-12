@@ -8,6 +8,8 @@ import { ProductCard } from "@/components/storefront/ProductCard";
 
 export const dynamic = "force-dynamic";
 
+export { storeMetadata as generateMetadata } from "@/lib/store-metadata";
+
 export default async function CategoryPage({
   params,
 }: {

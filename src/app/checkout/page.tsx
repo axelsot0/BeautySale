@@ -5,6 +5,8 @@ import { CheckoutClient } from "./CheckoutClient";
 
 export const dynamic = "force-dynamic";
 
+export { storeMetadata as generateMetadata } from "@/lib/store-metadata";
+
 export default async function CheckoutPage() {
   const supabase = createServiceClient();
   const tenantId = await getStorefrontTenantId();

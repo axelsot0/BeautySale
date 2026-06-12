@@ -20,13 +20,12 @@ const dmSans = DM_Sans({
   display: "swap",
 });
 
-export async function generateMetadata(): Promise<Metadata> {
-  const { siteName } = await getActiveTheme(await getStorefrontTenantId());
-  return {
-    title: `${siteName} — Belleza, cuidado personal y accesorios`,
-    description: "Productos de belleza, cuidado personal y accesorios. Bold, colorful, hecho para vos.",
-  };
-}
+// Título de plataforma por defecto. Las rutas de tienda (/store, /productos,
+// /ofertas, /c, /p, /checkout) lo pisan con el nombre del tenant.
+export const metadata: Metadata = {
+  title: "BeautySale",
+  description: "Lanzá tu tienda de belleza online sin código.",
+};
 
 export default async function RootLayout({
   children,

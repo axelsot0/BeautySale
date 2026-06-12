@@ -9,6 +9,8 @@ import { ProductSearch } from "../productos/ProductSearch";
 
 export const dynamic = "force-dynamic";
 
+export { storeMetadata as generateMetadata } from "@/lib/store-metadata";
+
 export default async function OfertasPage() {
   const t = await getStorefrontTenantId();
   const [products, categories] = await Promise.all([
