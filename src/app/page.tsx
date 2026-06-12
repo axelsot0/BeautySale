@@ -7,6 +7,13 @@ import { PLAN_PRICES, PRO_DISCOUNT_PCT } from "@/lib/plans";
 
 export const dynamic = "force-dynamic";
 
+// La landing es de la plataforma: no hereda el título del tenant de la cookie.
+export const metadata = {
+  title: "BeautySale — Tu tienda de belleza online en minutos",
+  description:
+    "Lanzá tu tienda de belleza sin código. Catálogo, pagos, WhatsApp y diseño personalizable.",
+};
+
 const PLAN_CARDS = [
   {
     name: "Demo",

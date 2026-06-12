@@ -3,6 +3,8 @@ import { SignupForm } from "./SignupForm";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = { title: "Creá tu tienda — BeautySale" };
+
 const PERKS = [
   "Tu catálogo de productos y categorías",
   "Pedidos con cobro por WhatsApp",
