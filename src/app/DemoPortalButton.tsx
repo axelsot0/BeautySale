@@ -18,6 +18,7 @@ export function DemoPortalButton() {
   // El iframe se monta recién en el primer hover para no cargar la tienda
   // en cada visita a la landing; después queda montado (sin recargas).
   const [mounted, setMounted] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
   return (
     <div
@@ -58,14 +59,31 @@ export function DemoPortalButton() {
             style={{ backgroundColor: "#4A2511" }}
           >
             <span
-              className="block overflow-hidden"
+              className="relative block overflow-hidden"
               style={{ width: FRAME_W, height: FRAME_H }}
             >
+              {/* Skeleton mientras carga el iframe */}
+              {!loaded && (
+                <span className="absolute inset-0 z-10 grid place-items-center">
+                  <span className="absolute inset-0 animate-pulse bg-gradient-to-br from-[#5a2f17] via-[#4A2511] to-[#5a2f17]" />
+                  <span className="relative grid place-items-center">
+                    <span className="absolute h-14 w-14 rounded-full animate-ping" style={{ backgroundColor: "rgba(255,228,204,0.25)" }} />
+                    <span className="relative grid h-12 w-12 place-items-center rounded-full" style={{ backgroundColor: "#ffe4cc" }}>
+                      <Store className="h-5 w-5" style={{ color: "#4A2511" }} />
+                    </span>
+                    <span className="relative mt-3 text-xs font-bold" style={{ color: "#ffe4cc" }}>
+                      Abriendo portal…
+                    </span>
+                  </span>
+                </span>
+              )}
               {mounted && (
                 <iframe
                   src={DEMO_URL}
                   title="Demo BeautySale en vivo"
                   loading="lazy"
+                  onLoad={() => setLoaded(true)}
+                  className={`transition-opacity duration-500 ${loaded ? "opacity-100" : "opacity-0"}`}
                   style={{
                     width: IFRAME_W,
                     height: FRAME_H / SCALE,
