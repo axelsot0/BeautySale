@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { CheckCircle2, Loader2 } from "lucide-react";
+import { getDict, readClientLocale, DEFAULT_LOCALE, type Locale } from "@/lib/i18n";
 
 const FP_KEY = "bs_fp";
 
@@ -24,13 +25,6 @@ type State =
   | { status: "success"; code: string }
   | { status: "error"; message: string };
 
-const ERROR_MESSAGES: Record<string, string> = {
-  already_subscribed: "Este correo ya está registrado. Revisa tu bandeja de entrada.",
-  already_claimed:    "Ya recibiste tu código de bienvenida en este dispositivo.",
-  invalid_email:      "Ingresá un correo válido.",
-  server_error:       "Ocurrió un error. Intentá de nuevo en un momento.",
-};
-
 export function NewsletterForm({
   title,
   subtitle,
@@ -42,10 +36,20 @@ export function NewsletterForm({
 }) {
   const [state, setState] = useState<State>({ status: "idle" });
   const fpRef = useRef<string>("");
+  const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
 
   useEffect(() => {
     fpRef.current = getOrCreateFp();
+    setLocale(readClientLocale());
   }, []);
+
+  const t = getDict(locale);
+  const ERROR_MESSAGES: Record<string, string> = {
+    already_subscribed: t.nl_err_subscribed,
+    already_claimed: t.nl_err_claimed,
+    invalid_email: t.nl_err_email,
+    server_error: t.nl_err_server,
+  };
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -81,12 +85,10 @@ export function NewsletterForm({
         <div className="flex items-center gap-2 text-mint">
           <CheckCircle2 className="h-5 w-5 shrink-0" />
           <p className="font-semibold text-cream">
-            {title ? `¡Bienvenida a ${title}!` : "¡Bienvenida al Glow Squad!"}
+            {t.nl_welcome_prefix} {title ?? ""}
           </p>
         </div>
-        <p className="text-sm text-cream/70">
-          Revisá tu correo — te enviamos el código. También lo tenés acá:
-        </p>
+        <p className="text-sm text-cream/70">{t.nl_check_mail}</p>
         <div className="inline-flex items-center gap-3 rounded-xl border-2 border-dashed border-pink bg-cream/5 px-5 py-3">
           <span className="font-mono text-2xl font-black tracking-widest text-pink">
             {state.code}
@@ -96,10 +98,10 @@ export function NewsletterForm({
             onClick={() => navigator.clipboard.writeText(state.code)}
             className="text-xs font-semibold text-cream/60 hover:text-cream transition"
           >
-            copiar
+            {t.nl_copy}
           </button>
         </div>
-        <p className="text-xs text-cream/50">Válido para tu primera compra. No acumulable.</p>
+        <p className="text-xs text-cream/50">{t.nl_valid_note}</p>
       </div>
     );
   }
@@ -123,10 +125,10 @@ export function NewsletterForm({
           {state.status === "loading" ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              Enviando…
+              {t.nl_sending}
             </>
           ) : (
-            `Quiero el ${discountPct}%`
+            `${t.nl_want} ${discountPct}%`
           )}
         </button>
       </form>

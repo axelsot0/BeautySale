@@ -1,9 +1,11 @@
 import { ArrowRight } from "lucide-react";
 import { ProductCard } from "./ProductCard";
 import { cn } from "@/lib/utils";
+import { getDict } from "@/lib/i18n";
+import { getServerLocale } from "@/lib/i18n-server";
 import type { Category, Product } from "@/lib/data/types";
 
-export function ProductCarousel({
+export async function ProductCarousel({
   category,
   products,
   eyebrow,
@@ -17,6 +19,7 @@ export function ProductCarousel({
   bgClass?: string;
 }) {
   if (products.length === 0) return null;
+  const t = getDict(await getServerLocale());
 
   return (
     <section className={cn("py-10 md:py-16", bgClass)}>
@@ -32,7 +35,7 @@ export function ProductCarousel({
             href={`/c/${category.slug}`}
             className="hidden md:inline-flex items-center gap-1.5 rounded-full bg-plum px-5 py-2.5 text-sm font-semibold text-cream hover:bg-pink transition"
           >
-            Ver todos <ArrowRight className="h-4 w-4" />
+            {t.view_all} <ArrowRight className="h-4 w-4" />
           </a>
         </div>
 
@@ -50,7 +53,7 @@ export function ProductCarousel({
               <div className="grid h-14 w-14 place-items-center rounded-full bg-pink text-cream group-hover:scale-110 transition">
                 <ArrowRight className="h-5 w-5" />
               </div>
-              <p className="font-display text-xl text-plum">Ver toda la categoría</p>
+              <p className="font-display text-xl text-plum">{t.view_whole_category}</p>
               <p className="text-sm text-plum-soft">{category.name}</p>
             </div>
           </a>
@@ -60,7 +63,7 @@ export function ProductCarousel({
           href={`/c/${category.slug}`}
           className="md:hidden mt-6 block rounded-full bg-plum px-5 py-3 text-center text-sm font-semibold text-cream"
         >
-          Ver todos los productos
+          {t.view_all_products}
         </a>
       </div>
     </section>

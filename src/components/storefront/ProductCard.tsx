@@ -83,7 +83,7 @@ export function ProductCard({ product }: { product: Product }) {
         <div className="flex items-center gap-1 text-xs text-plum-soft">
           <Star className="h-3.5 w-3.5 fill-butter text-butter" />
           <span className="font-semibold text-plum">4.{(product.title.length % 9) + 1}</span>
-          <span>· {(product.title.length * 7) % 200 + 12} reseñas</span>
+          <span>· {(product.title.length * 7) % 200 + 12} {t.reviews}</span>
         </div>
         <h3 className="font-display text-lg leading-tight line-clamp-2">
           {product.title}

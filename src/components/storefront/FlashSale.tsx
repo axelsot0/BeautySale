@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Zap } from "lucide-react";
+import { getDict, readClientLocale, DEFAULT_LOCALE, type Locale } from "@/lib/i18n";
 import type { FlashSale as FlashSaleData } from "@/lib/data/types";
 
 function rollingEnd() {
@@ -19,6 +20,9 @@ export function FlashSale({ data }: { data: FlashSaleData }) {
   // null = not yet hydrated; avoids SSR/client mismatch
   const [endsAt, setEndsAt] = useState<number | null>(null);
   const [now, setNow] = useState<number | null>(null);
+  const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
+  useEffect(() => setLocale(readClientLocale()), []);
+  const t = getDict(locale);
 
   useEffect(() => {
     const explicit = data.ends_at ? new Date(data.ends_at).getTime() : null;
@@ -35,10 +39,10 @@ export function FlashSale({ data }: { data: FlashSaleData }) {
   const seconds = remaining !== null ? Math.floor((remaining % 60_000) / 1000) : 0;
 
   const blocks = [
-    { label: "días", value: pad(days), bg: "bg-cream" },
-    { label: "hs",   value: pad(hours), bg: "bg-cream" },
-    { label: "min",  value: pad(minutes), bg: "bg-cream" },
-    { label: "seg",  value: pad(seconds), bg: "bg-butter" },
+    { label: t.d_days,  value: pad(days), bg: "bg-cream" },
+    { label: t.d_hours, value: pad(hours), bg: "bg-cream" },
+    { label: t.d_min,   value: pad(minutes), bg: "bg-cream" },
+    { label: t.d_sec,   value: pad(seconds), bg: "bg-butter" },
   ];
 
   return (
@@ -62,7 +66,7 @@ export function FlashSale({ data }: { data: FlashSaleData }) {
                 href={data.cta_link || "/ofertas"}
                 className="inline-block rounded-full bg-cream px-6 py-3 font-bold text-plum hover:bg-butter transition"
               >
-                Comprar ofertas
+                {t.shop_sale}
               </a>
             </div>
 

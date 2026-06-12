@@ -1,8 +1,11 @@
 import type { Product } from "@/lib/data/types";
+import { getDict } from "@/lib/i18n";
+import { getServerLocale } from "@/lib/i18n-server";
 import { ProductCard } from "./ProductCard";
 
-export function TopSellers({ products }: { products: Product[] }) {
+export async function TopSellers({ products }: { products: Product[] }) {
   if (products.length === 0) return null;
+  const t = getDict(await getServerLocale());
 
   return (
     <section className="py-10 md:py-16">
@@ -10,17 +13,15 @@ export function TopSellers({ products }: { products: Product[] }) {
         <div className="flex items-end justify-between mb-6 md:mb-8">
           <div>
             <p className="text-sm font-bold uppercase tracking-widest text-pink">
-              🔥 top sellers
+              {t.top_eyebrow}
             </p>
             <h2 className="font-display text-3xl md:text-5xl mt-1">
-              Lo más amado <span className="italic text-pink">💖</span>
+              {t.top_title} <span className="italic text-pink">💖</span>
             </h2>
-            <p className="text-plum-soft mt-1">
-              Lo que más eligen las del Glow Squad este mes.
-            </p>
+            <p className="text-plum-soft mt-1">{t.top_subtitle}</p>
           </div>
           <a href="/destacados" className="hidden md:inline-flex rounded-full bg-plum px-5 py-2.5 text-sm font-semibold text-cream hover:bg-pink transition">
-            Ver todos
+            {t.view_all}
           </a>
         </div>
 
@@ -34,7 +35,7 @@ export function TopSellers({ products }: { products: Product[] }) {
           href="/destacados"
           className="md:hidden mt-6 block rounded-full bg-plum px-5 py-3 text-center text-sm font-semibold text-cream"
         >
-          Ver todos los destacados
+          {t.view_all_featured}
         </a>
       </div>
     </section>

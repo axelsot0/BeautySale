@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useCartStore } from "@/lib/cart/store";
 import { formatPrice } from "@/lib/utils";
+import { getDict, readClientLocale, DEFAULT_LOCALE, type Locale } from "@/lib/i18n";
 import { Loader2, ShoppingBag, Check, Tag, MessageCircle } from "lucide-react";
 
 interface FormFields {
@@ -44,6 +45,9 @@ export function CheckoutClient({
   const [applied, setApplied] = useState<{ code: string; percent: number } | null>(null);
   const [codeError, setCodeError] = useState<string | null>(null);
   const [validating, setValidating] = useState(false);
+  const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
+  useEffect(() => setLocale(readClientLocale()), []);
+  const t = getDict(locale);
 
   function update(field: keyof FormFields, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -54,9 +58,9 @@ export function CheckoutClient({
   const total = parseFloat((sub - discount).toFixed(2));
 
   const CODE_ERRORS: Record<string, string> = {
-    not_found: "Código inválido",
-    used: "Este código ya fue usado",
-    invalid: "Código inválido",
+    not_found: t.co_err_code,
+    used: t.co_err_code_used,
+    invalid: t.co_err_code,
   };
 
   async function applyCode() {
@@ -131,17 +135,17 @@ export function CheckoutClient({
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error ?? "Error al procesar el pedido");
+        setError(data.error ?? t.co_err_order);
         return;
       }
 
       if (data.approvalUrl) {
         window.location.href = data.approvalUrl;
       } else {
-        setError("No se recibió URL de pago");
+        setError(t.co_err_no_url);
       }
     } catch {
-      setError("Error de conexión. Intentá de nuevo.");
+      setError(t.co_err_conn);
     } finally {
       setLoading(false);
     }
@@ -164,7 +168,7 @@ export function CheckoutClient({
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error ?? "Error al procesar el pedido");
+        setError(data.error ?? t.co_err_order);
         return;
       }
 
@@ -173,7 +177,7 @@ export function CheckoutClient({
       clear();
       window.location.href = data.waUrl;
     } catch {
-      setError("Error de conexión. Intentá de nuevo.");
+      setError(t.co_err_conn);
     } finally {
       setWaLoading(false);
     }
@@ -185,9 +189,9 @@ export function CheckoutClient({
     return (
       <main className="min-h-screen flex flex-col items-center justify-center gap-4 px-4">
         <ShoppingBag className="h-16 w-16 text-plum/20" />
-        <h1 className="font-display text-3xl">Tu carrito está vacío</h1>
+        <h1 className="font-display text-3xl">{t.cart_empty}</h1>
         <a href="/" className="rounded-full bg-pink px-6 py-3 font-bold text-cream hover:shadow-[0_0_24px_rgba(255,77,139,0.4)] transition">
-          Volver al inicio
+          {t.back_home}
         </a>
       </main>
     );
@@ -212,10 +216,10 @@ export function CheckoutClient({
 
             {/* Contact */}
             <section className="rounded-[24px] bg-white border border-plum/5 p-6 space-y-4">
-              <h2 className="font-display text-xl">Datos de contacto</h2>
+              <h2 className="font-display text-xl">{t.co_contact}</h2>
 
               <label className="block">
-                <span className="field-label">Nombre completo</span>
+                <span className="field-label">{t.co_name}</span>
                 <input
                   type="text"
                   required
@@ -239,7 +243,7 @@ export function CheckoutClient({
               </label>
 
               <label className="block">
-                <span className="field-label">Teléfono <span className="text-plum/30 font-normal">(opcional)</span></span>
+                <span className="field-label">{t.co_phone} <span className="text-plum/30 font-normal">{t.co_optional}</span></span>
                 <input
                   type="tel"
                   value={form.customer_phone}
@@ -252,10 +256,10 @@ export function CheckoutClient({
 
             {/* Shipping */}
             <section className="rounded-[24px] bg-white border border-plum/5 p-6 space-y-4">
-              <h2 className="font-display text-xl">Dirección de envío</h2>
+              <h2 className="font-display text-xl">{t.co_shipping}</h2>
 
               <label className="block">
-                <span className="field-label">Calle y número</span>
+                <span className="field-label">{t.co_street}</span>
                 <input
                   type="text"
                   required
@@ -268,7 +272,7 @@ export function CheckoutClient({
 
               <div className="grid grid-cols-2 gap-3">
                 <label className="block">
-                  <span className="field-label">Ciudad</span>
+                  <span className="field-label">{t.co_city}</span>
                   <input
                     type="text"
                     required
@@ -279,7 +283,7 @@ export function CheckoutClient({
                   />
                 </label>
                 <label className="block">
-                  <span className="field-label">Provincia</span>
+                  <span className="field-label">{t.co_state}</span>
                   <input
                     type="text"
                     value={form.state}
@@ -292,7 +296,7 @@ export function CheckoutClient({
 
               <div className="grid grid-cols-2 gap-3">
                 <label className="block">
-                  <span className="field-label">Código postal</span>
+                  <span className="field-label">{t.co_zip}</span>
                   <input
                     type="text"
                     value={form.zip}
@@ -302,7 +306,7 @@ export function CheckoutClient({
                   />
                 </label>
                 <label className="block">
-                  <span className="field-label">País</span>
+                  <span className="field-label">{t.co_country}</span>
                   <input
                     type="text"
                     required
@@ -324,7 +328,7 @@ export function CheckoutClient({
 
           {/* ── Right: order summary ── */}
           <div className="rounded-[24px] bg-white border border-plum/5 p-6 space-y-4 sticky top-24">
-            <h2 className="font-display text-xl">Resumen del pedido</h2>
+            <h2 className="font-display text-xl">{t.co_summary}</h2>
 
             <ul className="divide-y divide-plum/5 space-y-0">
               {items.map((item) => (
@@ -359,13 +363,13 @@ export function CheckoutClient({
                     onClick={removeCode}
                     className="text-xs font-semibold text-plum-soft hover:text-pink"
                   >
-                    Quitar
+                    {t.remove}
                   </button>
                 </div>
               ) : (
                 <div className="space-y-1.5">
                   <span className="field-label flex items-center gap-1.5">
-                    <Tag className="h-3.5 w-3.5" /> Código de descuento
+                    <Tag className="h-3.5 w-3.5" /> {t.co_discount_code}
                   </span>
                   <div className="flex gap-2">
                     <input
@@ -382,7 +386,7 @@ export function CheckoutClient({
                       disabled={validating || !code.trim()}
                       className="rounded-full bg-plum px-4 text-sm font-semibold text-cream hover:opacity-90 disabled:opacity-50 transition"
                     >
-                      {validating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Aplicar"}
+                      {validating ? <Loader2 className="h-4 w-4 animate-spin" /> : t.co_apply}
                     </button>
                   </div>
                   {codeError && <p className="text-xs text-pink font-medium">{codeError}</p>}
@@ -393,21 +397,21 @@ export function CheckoutClient({
             {/* Totals */}
             <div className="border-t border-plum/10 pt-4 space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-plum-soft">Subtotal</span>
+                <span className="text-plum-soft">{t.subtotal}</span>
                 <span className="font-semibold">{formatPrice(sub)}</span>
               </div>
               {discount > 0 && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-plum-soft">Descuento ({applied?.percent}%)</span>
+                  <span className="text-plum-soft">{t.co_discount} ({applied?.percent}%)</span>
                   <span className="font-semibold text-mint">-{formatPrice(discount)}</span>
                 </div>
               )}
               <div className="flex justify-between text-sm">
-                <span className="text-plum-soft">Envío</span>
-                <span className="font-semibold text-mint">A calcular</span>
+                <span className="text-plum-soft">{t.co_shipping}</span>
+                <span className="font-semibold text-mint">{t.co_shipping_calc}</span>
               </div>
               <div className="flex justify-between text-lg font-display pt-2 border-t border-plum/10">
-                <span>Total</span>
+                <span>{t.co_total}</span>
                 <span>{formatPrice(total)}</span>
               </div>
             </div>
@@ -421,9 +425,9 @@ export function CheckoutClient({
                 className="w-full rounded-full bg-pink py-3.5 font-bold text-cream hover:shadow-[0_0_24px_rgba(255,77,139,0.4)] disabled:opacity-60 transition flex items-center justify-center gap-2"
               >
                 {loading ? (
-                  <><Loader2 className="h-4 w-4 animate-spin" />Procesando…</>
+                  <><Loader2 className="h-4 w-4 animate-spin" />{t.co_processing}</>
                 ) : (
-                  "Pagar con PayPal →"
+                  t.co_pay_paypal
                 )}
               </button>
 
@@ -432,7 +436,7 @@ export function CheckoutClient({
                 <>
                   <div className="flex items-center gap-2">
                     <div className="flex-1 h-px bg-plum/10" />
-                    <span className="text-xs text-plum/30">o</span>
+                    <span className="text-xs text-plum/30">{t.co_or}</span>
                     <div className="flex-1 h-px bg-plum/10" />
                   </div>
                   <button
@@ -442,14 +446,12 @@ export function CheckoutClient({
                     className="w-full rounded-full bg-[#25D366] py-3.5 font-bold text-white hover:shadow-[0_0_24px_rgba(37,211,102,0.4)] disabled:opacity-60 transition flex items-center justify-center gap-2"
                   >
                     {waLoading ? (
-                      <><Loader2 className="h-4 w-4 animate-spin" />Procesando…</>
+                      <><Loader2 className="h-4 w-4 animate-spin" />{t.co_processing}</>
                     ) : (
-                      <><MessageCircle className="h-5 w-5" />Pedir por WhatsApp</>
+                      <><MessageCircle className="h-5 w-5" />{t.co_pay_wa}</>
                     )}
                   </button>
-                  <p className="text-xs text-center text-plum-soft">
-                    Se registrará tu pedido y te abriremos WhatsApp con el resumen listo para enviar.
-                  </p>
+                  <p className="text-xs text-center text-plum-soft">{t.co_wa_note}</p>
                 </>
               )}
             </div>

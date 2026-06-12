@@ -5,6 +5,8 @@ import { getStorefrontTenantId } from "@/lib/tenant-context";
 import { TENANT_COOKIE } from "@/lib/tenant-cookie";
 import { getCategories, getSocialLinks } from "@/lib/data/queries";
 import { SOCIAL_NETWORKS, socialHref, type SocialKey } from "@/lib/social";
+import { getDict } from "@/lib/i18n";
+import { getServerLocale } from "@/lib/i18n-server";
 import { NewsletterForm } from "./NewsletterForm";
 
 function InstagramIcon(props: React.SVGProps<SVGSVGElement>) {
@@ -64,6 +66,7 @@ export async function Footer() {
   ]);
 
   const { siteName, logoUrl } = theme;
+  const dict = getDict(await getServerLocale());
   const activeSocials = SOCIAL_NETWORKS.filter((n) => social[n.key].active && social[n.key].url.trim());
 
   // Render newsletter title: keep "Glow Squad" italic if present, otherwise wrap whole title
@@ -136,7 +139,7 @@ export async function Footer() {
           {/* Categorías (from DB) */}
           {categories.length > 0 && (
             <div>
-              <h4 className="font-display text-lg mb-4">Categorías</h4>
+              <h4 className="font-display text-lg mb-4">{dict.f_categories}</h4>
               <ul className="space-y-2">
                 {categories.map((cat) => (
                   <li key={cat.slug}>
@@ -152,7 +155,7 @@ export async function Footer() {
           {/* Contacto */}
           {footer.contact.length > 0 && (
             <div>
-              <h4 className="font-display text-lg mb-4">Contacto</h4>
+              <h4 className="font-display text-lg mb-4">{dict.f_contact}</h4>
               <ul className="space-y-2">
                 {footer.contact.map((item) => (
                   <li key={`${item.label}-${item.href}`}>
@@ -168,7 +171,7 @@ export async function Footer() {
           {/* Nosotros */}
           {footer.nosotros.length > 0 && (
             <div>
-              <h4 className="font-display text-lg mb-4">Nosotros</h4>
+              <h4 className="font-display text-lg mb-4">{dict.f_about}</h4>
               <ul className="space-y-2">
                 {footer.nosotros.map((item) => (
                   <li key={`${item.label}-${item.href}`}>
@@ -194,7 +197,7 @@ export async function Footer() {
             </div>
           )}
           <p className="text-xs text-cream/50">
-            © {new Date().getFullYear()} {siteName}. Hecho con 💖.
+            © {new Date().getFullYear()} {siteName}. {dict.made_with} 💖.
           </p>
         </div>
       </div>

@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect } from "react";
 import { Search, SlidersHorizontal, X, Check } from "lucide-react";
+import { getDict, readClientLocale, DEFAULT_LOCALE, type Locale } from "@/lib/i18n";
 import type { Product, Category } from "@/lib/data/types";
 import { ProductCard } from "@/components/storefront/ProductCard";
 
@@ -10,13 +11,6 @@ interface Props {
   categories: Category[];
 }
 
-const SORT_OPTIONS = [
-  { value: "default",    label: "Más recientes" },
-  { value: "price-asc",  label: "Menor precio" },
-  { value: "price-desc", label: "Mayor precio" },
-  { value: "discount",   label: "Mayor descuento" },
-];
-
 export function ProductSearch({ products, categories }: Props) {
   const [query, setQuery]           = useState("");
   const [catFilter, setCatFilter]   = useState<string | null>(null);
@@ -24,6 +18,16 @@ export function ProductSearch({ products, categories }: Props) {
   const [filterOpen, setFilterOpen] = useState(false);
   const panelRef  = useRef<HTMLDivElement>(null);
   const inputRef  = useRef<HTMLInputElement>(null);
+  const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
+  useEffect(() => setLocale(readClientLocale()), []);
+  const t = getDict(locale);
+
+  const SORT_OPTIONS = [
+    { value: "default",    label: t.sort_recent },
+    { value: "price-asc",  label: t.sort_price_asc },
+    { value: "price-desc", label: t.sort_price_desc },
+    { value: "discount",   label: t.sort_discount },
+  ];
 
   // Close filter panel on outside click
   useEffect(() => {
@@ -76,9 +80,9 @@ export function ProductSearch({ products, categories }: Props) {
     <div className="relative">
       {/* Results count */}
       <p className="text-sm text-plum-soft mb-6">
-        {filtered.length} {filtered.length === 1 ? "producto" : "productos"}
-        {query && <span> para "<strong>{query}</strong>"</span>}
-        {activeCategory && <span> en <strong>{activeCategory.name}</strong></span>}
+        {filtered.length} {filtered.length === 1 ? t.cart_one : t.cart_many}
+        {query && <span> {t.search_for} "<strong>{query}</strong>"</span>}
+        {activeCategory && <span> {t.search_in} <strong>{activeCategory.name}</strong></span>}
       </p>
 
       {/* Grid */}
@@ -91,13 +95,13 @@ export function ProductSearch({ products, categories }: Props) {
       ) : (
         <div className="flex flex-col items-center justify-center py-24 gap-3 text-plum-soft pb-32">
           <Search className="h-14 w-14 opacity-20" />
-          <p className="font-display text-2xl">Sin resultados</p>
-          <p className="text-sm">Probá con otro término o eliminá los filtros.</p>
+          <p className="font-display text-2xl">{t.no_results}</p>
+          <p className="text-sm">{t.no_results_sub}</p>
           <button
             onClick={() => { setQuery(""); setCatFilter(null); setSort("default"); }}
             className="mt-2 rounded-full border border-plum/15 px-5 py-2.5 text-sm font-semibold hover:bg-plum/5 transition"
           >
-            Limpiar filtros
+            {t.clear_filters}
           </button>
         </div>
       )}
@@ -121,7 +125,7 @@ export function ProductSearch({ products, categories }: Props) {
             <div className="rounded-3xl bg-white/90 backdrop-blur-xl border border-white/60 shadow-[0_8px_40px_rgba(45,27,78,0.18)] p-4 space-y-4">
               {/* Sort */}
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-plum-soft mb-2">Ordenar</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-plum-soft mb-2">{t.sort_label}</p>
                 <div className="flex flex-wrap gap-1.5">
                   {SORT_OPTIONS.map((o) => (
                     <button
@@ -142,7 +146,7 @@ export function ProductSearch({ products, categories }: Props) {
 
               {/* Categories */}
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-plum-soft mb-2">Categoría</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-plum-soft mb-2">{t.cat_label}</p>
                 <div className="flex flex-wrap gap-1.5">
                   <button
                     onClick={() => setCatFilter(null)}
@@ -153,7 +157,7 @@ export function ProductSearch({ products, categories }: Props) {
                     }`}
                   >
                     {!catFilter && <Check className="h-3 w-3" />}
-                    Todas
+                    {t.all_f}
                   </button>
                   {categories.map((c) => (
                     <button
@@ -185,7 +189,7 @@ export function ProductSearch({ products, categories }: Props) {
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Buscar productos…"
+              placeholder={t.search_placeholder}
               className="flex-1 bg-transparent outline-none text-sm text-plum placeholder:text-plum-soft"
             />
 
@@ -211,7 +215,7 @@ export function ProductSearch({ products, categories }: Props) {
               }`}
             >
               <SlidersHorizontal className="h-3.5 w-3.5" />
-              Filtrar
+              {t.filter_btn}
               {activeFilters > 0 && (
                 <span className="grid h-4 w-4 place-items-center rounded-full bg-white/30 text-[10px] font-bold">
                   {activeFilters}

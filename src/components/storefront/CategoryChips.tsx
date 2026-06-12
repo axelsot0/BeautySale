@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { getDict, readClientLocale, DEFAULT_LOCALE, type Locale } from "@/lib/i18n";
 import type { Category } from "@/lib/data/types";
 
 const VISIBLE = 6; // cuántas caben sin scroll en desktop
@@ -15,6 +16,9 @@ export function CategoryChips({
   const trackRef = useRef<HTMLDivElement>(null);
   const needsScroll = categories.length > VISIBLE;
   const isEmpty = categories.length === 0;
+  const [locale, setLocale] = useState<Locale>(DEFAULT_LOCALE);
+  useEffect(() => setLocale(readClientLocale()), []);
+  const t = getDict(locale);
 
   // Auto-scroll suave cuando hay más categorías de las que caben
   useEffect(() => {
@@ -56,8 +60,8 @@ export function CategoryChips({
       <div className="max-w-7xl mx-auto px-4 md:px-8">
         <div className="flex items-end justify-between mb-6 md:mb-8">
           <div>
-            <p className="text-sm font-bold uppercase tracking-widest text-pink">💖 categorías</p>
-            <h2 className="font-display text-3xl md:text-5xl mt-1">Encontrá lo tuyo</h2>
+            <p className="text-sm font-bold uppercase tracking-widest text-pink">{t.cats_eyebrow}</p>
+            <h2 className="font-display text-3xl md:text-5xl mt-1">{t.cats_title}</h2>
           </div>
         </div>
 
@@ -98,7 +102,7 @@ export function CategoryChips({
                 {c.name}
               </p>
               <p className="text-xs text-plum/60">
-                {productCounts[c.id] != null ? productCounts[c.id] : "+"} productos
+                {productCounts[c.id] != null ? productCounts[c.id] : "+"} {t.products_word}
               </p>
             </a>
           ))}
