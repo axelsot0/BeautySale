@@ -36,6 +36,18 @@ export async function POST(req: NextRequest) {
   const membership = await getAdminMembership();
   const tenantId = membership ? await getAdminTenantId() : null;
 
+  // Evitar solicitudes pendientes duplicadas por tienda.
+  if (tenantId) {
+    const { data: dup } = await supabase
+      .from("subscription_requests")
+      .select("id")
+      .eq("tenant_id", tenantId)
+      .eq("status", "pending")
+      .limit(1)
+      .maybeSingle();
+    if (dup) return NextResponse.json({ error: "pending_exists" }, { status: 409 });
+  }
+
   // Monto server-side (mismo cálculo que el checkout PayPal).
   const price = PLAN_PRICES[plan];
   let discount = 0;

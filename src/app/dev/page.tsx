@@ -29,6 +29,9 @@ export default async function DevPage() {
       .order("created_at", { ascending: false }),
   ]);
 
+  const tenantById = new Map<number, { name: string; slug: string }>();
+  for (const t of tenants ?? []) tenantById.set(t.id, { name: t.name, slug: t.slug });
+
   const ownerByTenant = new Map<number, string>();
   const countByTenant = new Map<number, number>();
   for (const m of members ?? []) {
@@ -199,8 +202,12 @@ export default async function DevPage() {
                 </div>
                 <p className="text-sm text-cream/60 truncate">
                   {r.email} ·{" "}
-                  {r.tenant_id ? `tenant #${r.tenant_id}` : "nuevo (sin cuenta)"} ·{" "}
-                  {new Date(r.created_at as string).toLocaleDateString("es")}
+                  {r.tenant_id
+                    ? tenantById.has(r.tenant_id)
+                      ? `${tenantById.get(r.tenant_id)!.name} (/${tenantById.get(r.tenant_id)!.slug})`
+                      : `tienda #${r.tenant_id}`
+                    : "nuevo (sin cuenta)"}{" "}
+                  · {new Date(r.created_at as string).toLocaleDateString("es")}
                 </p>
               </div>
               <form action={resolveSubscriptionRequest}>

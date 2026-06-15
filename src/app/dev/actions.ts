@@ -8,6 +8,8 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { getAdminUser } from "@/lib/auth";
 import { ADMIN_TENANT_COOKIE } from "@/lib/tenant-context";
 import { provisionStore, deleteTenantCascade } from "@/lib/provision";
+import { sendSubscriptionStatusEmail } from "@/lib/email";
+import { PLAN_LABELS, type Plan } from "@/lib/plans";
 
 // Only the platform owner (role=developer) may provision stores.
 async function ensureDeveloper() {
@@ -119,8 +121,9 @@ export async function setPlan(formData: FormData) {
   revalidatePath("/dev");
 }
 
-// Marca una solicitud de suscripción (transferencia) como aprobada o rechazada.
-// No activa la tienda por sí sola: usá el botón Activar/Renovar del tenant.
+// Marca una solicitud de suscripción (transferencia) como aprobada o rechazada
+// y notifica al solicitante por email. No activa la tienda por sí sola: usá el
+// botón Activar/Renovar del tenant.
 export async function resolveSubscriptionRequest(formData: FormData) {
   await ensureDeveloper();
   const id = String(formData.get("id") ?? "");
@@ -128,7 +131,20 @@ export async function resolveSubscriptionRequest(formData: FormData) {
   if (!id || (status !== "approved" && status !== "rejected")) return;
 
   const supabase = createServiceClient();
-  await supabase.from("subscription_requests").update({ status }).eq("id", id);
+  const { data: reqRow } = await supabase
+    .from("subscription_requests")
+    .update({ status })
+    .eq("id", id)
+    .select("email, store_name, plan")
+    .maybeSingle();
+
+  if (reqRow?.email) {
+    await sendSubscriptionStatusEmail(reqRow.email, {
+      storeName: reqRow.store_name,
+      plan: PLAN_LABELS[reqRow.plan as Plan] ?? reqRow.plan,
+      approved: status === "approved",
+    });
+  }
   revalidatePath("/dev");
 }
 

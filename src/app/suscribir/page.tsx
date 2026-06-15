@@ -1,9 +1,10 @@
 import { Check, Crown, ArrowLeft } from "lucide-react";
 import { getAdminUser } from "@/lib/auth";
 import { getAdminMembership, getAdminTenantId } from "@/lib/tenant-context";
+import { getTenantStatus } from "@/lib/demo-server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { getPlatformPayPalCreds } from "@/lib/platform-paypal";
-import { PLAN_PRICES, PLAN_LABELS, PLAN_PERKS } from "@/lib/plans";
+import { PLAN_PRICES, PLAN_LABELS, PLAN_PERKS, type Plan } from "@/lib/plans";
 import { SubscribeCheckout } from "./SubscribeCheckout";
 
 export const dynamic = "force-dynamic";
@@ -30,16 +31,32 @@ export default async function SubscribePage({
   const membership = user ? await getAdminMembership() : null;
   let email = "";
   let storeName = "";
+  let currentPlan: Plan = "demo";
+  let planActive = false;
+  let hasPending = false;
   if (membership) {
     email = user?.email ?? "";
     const tenantId = await getAdminTenantId();
     const supabase = createServiceClient();
-    const { data: tenant } = await supabase
-      .from("tenants")
-      .select("name, site_name")
-      .eq("id", tenantId)
-      .maybeSingle();
+    const [{ data: tenant }, status, { data: pending }] = await Promise.all([
+      supabase.from("tenants").select("name, site_name").eq("id", tenantId).maybeSingle(),
+      getTenantStatus(tenantId),
+      supabase
+        .from("subscription_requests")
+        .select("id")
+        .eq("tenant_id", tenantId)
+        .eq("status", "pending")
+        .limit(1)
+        .maybeSingle(),
+    ]);
     storeName = tenant?.name ?? tenant?.site_name ?? "";
+    currentPlan = status.plan;
+    // Plan pago vigente: no demo y sin vencer (o sin fecha de vencimiento).
+    planActive =
+      !status.isDemo &&
+      status.plan !== "demo" &&
+      (status.planExpiresAt == null || new Date(status.planExpiresAt).getTime() > Date.now());
+    hasPending = !!pending;
   }
 
   return (
@@ -121,6 +138,9 @@ export default async function SubscribePage({
           email={email}
           storeName={storeName}
           paymentsEnabled={paymentsEnabled}
+          currentPlan={currentPlan}
+          planActive={planActive}
+          hasPending={hasPending}
         />
       </div>
     </div>

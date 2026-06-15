@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Loader2, CreditCard, MessageCircle, Lock } from "lucide-react";
-import { PLAN_PRICES, PRO_DISCOUNT_PCT } from "@/lib/plans";
+import { PLAN_PRICES, PLAN_LABELS, PRO_DISCOUNT_PCT, type Plan } from "@/lib/plans";
 
 const field =
   "w-full rounded-xl border border-plum/15 px-3.5 py-2.5 text-sm outline-none focus:border-pink transition disabled:bg-plum/5 disabled:text-plum-soft";
@@ -15,6 +15,7 @@ const ERRORS: Record<string, string> = {
   paypal_error: "Error con PayPal. Intentá de nuevo.",
   invalid_input: "Revisá los datos del formulario.",
   db_error: "No pudimos registrar la solicitud. Intentá de nuevo.",
+  pending_exists: "Ya tenés una solicitud pendiente. Esperá la confirmación.",
 };
 
 export function SubscribeCheckout({
@@ -24,6 +25,9 @@ export function SubscribeCheckout({
   email: initialEmail,
   storeName: initialStore,
   paymentsEnabled,
+  currentPlan = "demo",
+  planActive = false,
+  hasPending = false,
 }: {
   plan: "basic" | "pro";
   months: number;
@@ -31,6 +35,9 @@ export function SubscribeCheckout({
   email: string;
   storeName: string;
   paymentsEnabled: boolean;
+  currentPlan?: Plan;
+  planActive?: boolean;
+  hasPending?: boolean;
 }) {
   const [months, setMonths] = useState(initialMonths);
   const [promo, setPromo] = useState("");
@@ -64,9 +71,14 @@ export function SubscribeCheckout({
   }
 
   const formReady = email.trim() !== "" && storeName.trim() !== "";
+  // Ya tiene este mismo plan activo (no vencido): no tiene sentido recomprarlo.
+  const alreadyHasPlan = loggedIn && planActive && currentPlan === initialPlan;
+  const payDisabled = loading !== null || alreadyHasPlan;
+  const waDisabled = payDisabled || hasPending;
 
   async function payWithPayPal() {
     setError(null);
+    if (alreadyHasPlan) return;
     // Sin sesión: hay que crear cuenta primero (PayPal activa una tienda concreta).
     if (!loggedIn) {
       const next = `/suscribir?plan=${initialPlan}&months=${months}`;
@@ -95,6 +107,7 @@ export function SubscribeCheckout({
 
   async function payByTransfer() {
     setError(null);
+    if (alreadyHasPlan || hasPending) return;
     if (!formReady) {
       setError("Completá tu email y el nombre de la tienda.");
       return;
@@ -225,12 +238,23 @@ export function SubscribeCheckout({
         </p>
       )}
 
+      {alreadyHasPlan && (
+        <p className="rounded-xl bg-mint/15 border border-mint/30 px-3 py-2 text-sm text-plum font-medium">
+          Ya tenés el plan {PLAN_LABELS[initialPlan]} activo. Vas a poder renovarlo cuando esté por vencer.
+        </p>
+      )}
+      {!alreadyHasPlan && hasPending && (
+        <p className="rounded-xl bg-butter/20 border border-butter/40 px-3 py-2 text-sm text-plum font-medium">
+          Ya tenés una solicitud por transferencia pendiente. Esperá la confirmación o pagá con PayPal.
+        </p>
+      )}
+
       <div className="space-y-3">
         {paymentsEnabled && (
           <button
             onClick={payWithPayPal}
-            disabled={loading !== null}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-[#0070BA] py-3.5 font-bold text-white hover:opacity-90 disabled:opacity-60 transition"
+            disabled={payDisabled}
+            className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-[#0070BA] py-3.5 font-bold text-white hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed transition"
           >
             {loading === "paypal" ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -243,8 +267,8 @@ export function SubscribeCheckout({
 
         <button
           onClick={payByTransfer}
-          disabled={loading !== null}
-          className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-[#25D366] py-3.5 font-bold text-white hover:opacity-90 disabled:opacity-60 transition"
+          disabled={waDisabled}
+          className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-[#25D366] py-3.5 font-bold text-white hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed transition"
         >
           {loading === "whatsapp" ? (
             <Loader2 className="h-4 w-4 animate-spin" />

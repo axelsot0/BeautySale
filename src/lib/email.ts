@@ -331,6 +331,76 @@ export async function sendNewsletterWelcome(email: string, code: string): Promis
   }
 }
 
+// ── Estado de solicitud de suscripción ─────────────────────────────────────────
+
+function buildSubscriptionStatusEmail(d: {
+  storeName: string;
+  plan: string;
+  approved: boolean;
+}): string {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const title = d.approved ? "Tu suscripción fue aprobada" : "Tu solicitud no fue aprobada";
+  const emoji = d.approved ? "✅" : "⚠️";
+  const body = d.approved
+    ? `Confirmamos el pago de tu plan <strong>${d.plan}</strong> para <strong>${d.storeName}</strong>. Tu tienda ya está activa.`
+    : `No pudimos aprobar tu solicitud de suscripción para <strong>${d.storeName}</strong>. Si creés que es un error o querés intentar de nuevo, escribinos.`;
+  return `<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
+<body style="margin:0;padding:0;background:#FFF8F0;font-family:'Helvetica Neue',Arial,sans-serif;color:#2D1B4E;">
+  <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#FFF8F0;padding:32px 16px;">
+    <tr><td align="center">
+      <table cellpadding="0" cellspacing="0" border="0" width="560" style="max-width:560px;">
+        <tr><td style="padding-bottom:24px;text-align:center;">
+          <h1 style="margin:0;font-size:28px;font-weight:800;color:#2D1B4E;">
+            Beauty<span style="color:#FF4D8B;font-style:italic;">Sale</span>
+          </h1>
+        </td></tr>
+        <tr><td>
+          <table cellpadding="0" cellspacing="0" border="0" width="100%"
+            style="background:${d.approved ? "linear-gradient(135deg,#7DD3C0,#B5A3E8)" : "linear-gradient(135deg,#FF4D8B,#B5A3E8)"};border-radius:24px;padding:32px;text-align:center;">
+            <tr><td>
+              <div style="font-size:48px;margin-bottom:12px;">${emoji}</div>
+              <h2 style="margin:0 0 8px;font-size:24px;font-weight:800;color:#fff;">${title}</h2>
+              <p style="margin:0;font-size:15px;color:rgba(255,255,255,0.92);">${body}</p>
+            </td></tr>
+          </table>
+        </td></tr>
+        <tr><td style="padding:24px 0;text-align:center;">
+          <a href="${appUrl}/admin/subscription"
+            style="display:inline-block;background:#FF4D8B;color:#fff;font-size:15px;font-weight:700;padding:14px 32px;border-radius:999px;text-decoration:none;">
+            Ir a mi suscripción →
+          </a>
+        </td></tr>
+        <tr><td style="text-align:center;padding-top:8px;border-top:1px solid #f0e8f5;">
+          <p style="margin:16px 0 0;font-size:12px;color:#5C4A82;">© ${new Date().getFullYear()} BeautySale</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+}
+
+export async function sendSubscriptionStatusEmail(
+  email: string,
+  data: { storeName: string; plan: string; approved: boolean },
+): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.warn("[email] RESEND_API_KEY not set — skipping subscription status email");
+    return;
+  }
+  const from = process.env.RESEND_FROM_EMAIL ?? "BeautySale <onboarding@resend.dev>";
+  const { error } = await getResend().emails.send({
+    from,
+    to: [email],
+    subject: data.approved
+      ? "Tu suscripción BeautySale fue aprobada ✅"
+      : "Sobre tu solicitud de suscripción BeautySale",
+    html: buildSubscriptionStatusEmail(data),
+  });
+  if (error) console.error("[email] Failed to send subscription status:", error);
+}
+
 // ── Send ──────────────────────────────────────────────────────────────────────
 
 export async function sendOrderConfirmation(data: OrderConfirmationData): Promise<void> {
