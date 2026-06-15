@@ -34,15 +34,34 @@ export function SubscribeCheckout({
 }) {
   const [months, setMonths] = useState(initialMonths);
   const [promo, setPromo] = useState("");
+  const [promoState, setPromoState] = useState<"idle" | "checking" | "valid" | "invalid">("idle");
   const [email, setEmail] = useState(initialEmail);
   const [storeName, setStoreName] = useState(initialStore);
   const [loading, setLoading] = useState<null | "paypal" | "whatsapp">(null);
   const [error, setError] = useState<string | null>(null);
 
   const price = PLAN_PRICES[initialPlan];
-  const promoApplies = initialPlan === "pro" && promo.trim() !== "";
+  // El descuento solo cuenta cuando el código fue validado contra la DB.
+  const promoApplies = initialPlan === "pro" && promoState === "valid";
   const discount = promoApplies ? +(price * (PRO_DISCOUNT_PCT / 100)).toFixed(2) : 0;
   const total = +(price * months - discount).toFixed(2);
+
+  async function applyPromo() {
+    const code = promo.trim().toUpperCase();
+    if (!code) return;
+    setPromoState("checking");
+    try {
+      const res = await fetch("/api/subscription/validate-promo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+      });
+      const data = await res.json();
+      setPromoState(data.valid ? "valid" : "invalid");
+    } catch {
+      setPromoState("invalid");
+    }
+  }
 
   const formReady = email.trim() !== "" && storeName.trim() !== "";
 
@@ -59,7 +78,7 @@ export function SubscribeCheckout({
       const res = await fetch("/api/subscription/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: initialPlan, months, promo: promo.trim() || undefined }),
+        body: JSON.stringify({ plan: initialPlan, months, promo: promoApplies ? promo.trim() : undefined }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -90,7 +109,7 @@ export function SubscribeCheckout({
           months,
           email: email.trim(),
           store_name: storeName.trim(),
-          promo: promo.trim() || undefined,
+          promo: promoApplies ? promo.trim() : undefined,
         }),
       });
       const data = await res.json();
@@ -153,15 +172,38 @@ export function SubscribeCheckout({
             />
           </label>
           {initialPlan === "pro" && (
-            <label className="block flex-1 min-w-[10rem]">
+            <label className="block flex-1 min-w-[12rem]">
               <span className={labelCls}>Código promo (opcional)</span>
-              <input
-                type="text"
-                value={promo}
-                onChange={(e) => setPromo(e.target.value.toUpperCase())}
-                placeholder="PRO30-XXXXXX"
-                className={`${field} font-mono`}
-              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={promo}
+                  onChange={(e) => {
+                    setPromo(e.target.value.toUpperCase());
+                    setPromoState("idle");
+                  }}
+                  placeholder="PRO30-XXXXXX"
+                  className={`${field} font-mono`}
+                />
+                <button
+                  type="button"
+                  onClick={applyPromo}
+                  disabled={promo.trim() === "" || promoState === "checking"}
+                  className="shrink-0 rounded-xl bg-plum px-4 text-sm font-semibold text-cream hover:opacity-90 disabled:opacity-50 transition"
+                >
+                  {promoState === "checking" ? "..." : "Aplicar"}
+                </button>
+              </div>
+              {promoState === "valid" && (
+                <span className="mt-1 block text-xs font-semibold text-mint">
+                  Código válido · -{PRO_DISCOUNT_PCT}% aplicado
+                </span>
+              )}
+              {promoState === "invalid" && (
+                <span className="mt-1 block text-xs font-semibold text-pink">
+                  Código inválido o ya usado.
+                </span>
+              )}
             </label>
           )}
         </div>
