@@ -1,20 +1,12 @@
 import { createServiceClient } from "@/lib/supabase/service";
 import { getAdminTenantId } from "@/lib/tenant-context";
 import { getTenantStatus } from "@/lib/demo-server";
-import { getPlatformPayPalCreds } from "@/lib/platform-paypal";
-import { PLAN_PRICES, PLAN_LABELS, type Plan } from "@/lib/plans";
-import { PayForm } from "./PayForm";
+import { PLAN_PRICES, PLAN_LABELS, PLAN_PERKS, type Plan } from "@/lib/plans";
 import { Crown, Check, CalendarClock, Receipt, Sparkle, CheckCircle2, XCircle } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-
-const PLAN_PERKS: Record<Plan, string[]> = {
-  demo: ["Catálogo y pedidos", "Hero personalizable", "15 días de prueba"],
-  basic: ["Todo lo del demo", "Tema y colores propios", "Flash sales y marcas", "Secciones de portada"],
-  pro: ["Todo lo de Basic", "Secciones personalizadas", "Múltiples admins", "Soporte prioritario"],
-};
 
 function fmtDate(iso: string | null): string {
   if (!iso) return "—";
@@ -29,7 +21,6 @@ export default async function SubscriptionPage({
   const { paid, error, cancelled } = await searchParams;
   const tenantId = await getAdminTenantId();
   const status = await getTenantStatus(tenantId);
-  const paymentsEnabled = getPlatformPayPalCreds() !== null;
 
   const supabase = createServiceClient();
   const { data: payments } = await supabase
@@ -94,20 +85,25 @@ export default async function SubscriptionPage({
           </div>
         </div>
         {(status.isDemo || (daysLeft != null && daysLeft <= 7)) && (
-          <div className="mt-6 rounded-2xl bg-butter/15 border border-butter/30 px-5 py-4 text-sm">
-            <p className="font-semibold text-butter flex items-center gap-1.5">
-              <Sparkle className="h-4 w-4" />
-              {status.isDemo ? "Activá tu tienda" : "Renová tu plan"}
-            </p>
-            <p className="text-cream/80 mt-1">
-              Escribinos por WhatsApp para {status.isDemo ? "activar tu tienda con un plan pago" : "renovar"} —
-              pronto vas a poder pagar directo desde acá.
-            </p>
+          <div className="mt-6 rounded-2xl bg-butter/15 border border-butter/30 px-5 py-4 text-sm flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="font-semibold text-butter flex items-center gap-1.5">
+                <Sparkle className="h-4 w-4" />
+                {status.isDemo ? "Activá tu tienda" : "Renová tu plan"}
+              </p>
+              <p className="text-cream/80 mt-1">
+                Pagá con PayPal, tarjeta o transferencia por WhatsApp.
+              </p>
+            </div>
+            <a
+              href={`/suscribir?plan=${plan === "pro" ? "pro" : "basic"}`}
+              className="inline-flex items-center gap-1.5 rounded-full bg-pink px-5 py-2.5 text-sm font-bold text-cream hover:opacity-90 transition shrink-0"
+            >
+              {status.isDemo ? "Activar ahora" : "Renovar ahora"}
+            </a>
           </div>
         )}
       </section>
-
-      {paymentsEnabled && <PayForm currentPlan={plan} />}
 
       {/* Comparativa de planes */}
       <section>
@@ -141,6 +137,18 @@ export default async function SubscriptionPage({
                     </li>
                   ))}
                 </ul>
+                {p !== "demo" && (
+                  <a
+                    href={`/suscribir?plan=${p}`}
+                    className={`block text-center rounded-full px-5 py-2.5 text-sm font-bold transition ${
+                      isCurrent
+                        ? "bg-plum/5 text-plum hover:bg-plum hover:text-cream"
+                        : "bg-pink text-cream hover:opacity-90"
+                    }`}
+                  >
+                    {isCurrent ? "Renovar" : "Comprar"}
+                  </a>
+                )}
               </div>
             );
           })}

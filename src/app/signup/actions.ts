@@ -11,7 +11,14 @@ const schema = z.object({
   full_name: z.string().min(1).max(120),
   email: z.string().email(),
   password: z.string().min(6).max(72),
+  next: z.string().optional(),
 });
+
+// Solo rutas internas (evita open-redirect). Acepta /suscribir, /admin, etc.
+function safeNext(next: string | undefined): string | null {
+  if (!next || !next.startsWith("/") || next.startsWith("//")) return null;
+  return next;
+}
 
 export type SignupState = { error?: string };
 
@@ -27,12 +34,14 @@ export async function signupStore(_prev: SignupState, formData: FormData): Promi
     full_name: formData.get("full_name"),
     email: formData.get("email"),
     password: formData.get("password"),
+    next: formData.get("next") ?? undefined,
   });
   if (!parsed.success) {
     return { error: "Revisá los campos: email válido, contraseña de 6+ caracteres y nombre de tienda." };
   }
 
   const { store_name, full_name, email, password } = parsed.data;
+  const next = safeNext(parsed.data.next);
 
   const result = await provisionStore({
     email,
@@ -53,5 +62,6 @@ export async function signupStore(_prev: SignupState, formData: FormData): Promi
   await supabase.auth.updateUser({ data: { is_admin: true } });
   await supabase.auth.refreshSession();
 
-  redirect("/admin/welcome");
+  // next lleva al checkout (ej. /suscribir) cuando el signup vino de "Pagar con PayPal".
+  redirect(next ?? "/admin/welcome");
 }

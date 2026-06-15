@@ -12,7 +12,12 @@ const PERKS = [
   "15 días para probarla sin costo",
 ];
 
-export default function SignupPage() {
+export default async function SignupPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const { next } = await searchParams;
   return (
     <div className="min-h-screen bg-cream text-plum grid lg:grid-cols-2">
       {/* Left: pitch */}
@@ -53,7 +58,7 @@ export default function SignupPage() {
             Empezá en modo demo. Sin tarjeta de crédito.
           </p>
 
-          <SignupForm />
+          <SignupForm next={next} />
 
           <p className="text-sm text-center text-plum-soft mt-6">
             ¿Ya tenés tienda?{" "}

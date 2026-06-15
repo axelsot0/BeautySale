@@ -33,7 +33,7 @@ export async function proxy(request: NextRequest) {
     const rest = tenantMatch[2] || "/store";
     const { data: tenant } = await supabase
       .from("tenants")
-      .select("slug, active, is_demo, demo_expires_at")
+      .select("slug, active, is_demo, demo_expires_at, plan_expires_at")
       .eq("slug", slug)
       .maybeSingle();
 
@@ -42,7 +42,11 @@ export async function proxy(request: NextRequest) {
       tenant?.is_demo === true &&
       tenant.demo_expires_at != null &&
       new Date(tenant.demo_expires_at).getTime() < Date.now();
-    if (!tenant || tenant.active === false || demoExpired) {
+    const planExpired =
+      tenant?.is_demo === false &&
+      tenant.plan_expires_at != null &&
+      new Date(tenant.plan_expires_at).getTime() < Date.now();
+    if (!tenant || tenant.active === false || demoExpired || planExpired) {
       url.pathname = "/store-unavailable";
       return NextResponse.rewrite(url);
     }

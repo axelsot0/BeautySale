@@ -8,13 +8,14 @@ const INIT: SignupState = {};
 const field = "w-full rounded-xl border border-plum/15 px-3.5 py-2.5 text-sm outline-none focus:border-pink transition";
 const label = "block text-xs font-semibold text-plum-soft uppercase tracking-wider mb-1";
 
-export function SignupForm() {
+export function SignupForm({ next }: { next?: string }) {
   const [state, action, pending] = useActionState(signupStore, INIT);
 
   return (
     <form action={action} className="space-y-4">
       {/* Honeypot */}
       <input type="text" name="company" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden />
+      {next && <input type="hidden" name="next" value={next} />}
 
       <div>
         <label className={label}>Nombre de tu tienda</label>

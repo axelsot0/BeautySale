@@ -31,6 +31,12 @@ export default async function AdminLayout({
     ? Math.max(0, Math.ceil((new Date(status.planExpiresAt).getTime() - Date.now()) / DAY_MS))
     : null;
 
+  // Vencido: demo expirado o plan pago vencido. El dev nunca se bloquea.
+  const planExpired =
+    !!status && !status.isDemo && status.planExpiresAt != null &&
+    new Date(status.planExpiresAt).getTime() < Date.now();
+  const expired = !isDeveloper && ((status?.expired ?? false) || planExpired);
+
   return (
     <AdminShell
       userEmail={user.email ?? ""}
@@ -40,6 +46,8 @@ export default async function AdminLayout({
       isDemo={status?.isDemo ?? false}
       demoDaysLeft={status?.daysLeft ?? null}
       planDaysLeft={planDaysLeft}
+      expired={expired}
+      currentPlan={status?.plan ?? "demo"}
     >
       {children}
     </AdminShell>

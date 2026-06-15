@@ -162,14 +162,18 @@ export default function LandingPage() {
                 ))}
               </ul>
               <a
-                href="/signup"
+                href={
+                  p.name === "Demo"
+                    ? "/signup"
+                    : `/suscribir?plan=${p.name.toLowerCase()}`
+                }
                 className={`block text-center rounded-full px-6 py-3 font-bold transition ${
                   p.highlight
                     ? "bg-pink text-cream hover:opacity-90"
                     : "bg-plum/5 text-plum hover:bg-plum hover:text-cream"
                 }`}
               >
-                Empezar
+                {p.name === "Demo" ? "Empezar gratis" : "Comprar"}
               </a>
             </div>
           ))}

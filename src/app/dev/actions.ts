@@ -119,6 +119,19 @@ export async function setPlan(formData: FormData) {
   revalidatePath("/dev");
 }
 
+// Marca una solicitud de suscripción (transferencia) como aprobada o rechazada.
+// No activa la tienda por sí sola: usá el botón Activar/Renovar del tenant.
+export async function resolveSubscriptionRequest(formData: FormData) {
+  await ensureDeveloper();
+  const id = String(formData.get("id") ?? "");
+  const status = String(formData.get("status") ?? "");
+  if (!id || (status !== "approved" && status !== "rejected")) return;
+
+  const supabase = createServiceClient();
+  await supabase.from("subscription_requests").update({ status }).eq("id", id);
+  revalidatePath("/dev");
+}
+
 // Permanently delete a store and its data (cascade) + auth users.
 export async function deleteTenant(formData: FormData) {
   await ensureDeveloper();

@@ -26,8 +26,10 @@ import {
 } from "lucide-react";
 import { logout } from "../login/actions";
 import { switchTenant } from "./tenant-switch";
+import { ExpiredGate } from "./ExpiredGate";
 import { cn } from "@/lib/utils";
 import { isPathLockedInDemo } from "@/lib/demo";
+import type { Plan } from "@/lib/plans";
 
 type TenantOption = { id: number; name: string };
 
@@ -56,6 +58,8 @@ export function AdminShell({
   isDemo = false,
   demoDaysLeft = null,
   planDaysLeft = null,
+  expired = false,
+  currentPlan = "demo",
   children,
 }: {
   userEmail: string;
@@ -65,6 +69,8 @@ export function AdminShell({
   isDemo?: boolean;
   demoDaysLeft?: number | null;
   planDaysLeft?: number | null;
+  expired?: boolean;
+  currentPlan?: Plan;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -120,7 +126,7 @@ export function AdminShell({
       )}
 
       <main className="flex-1 min-w-0 p-4 md:p-8 max-w-full">
-        {locked ? <LockedFeature /> : children}
+        {expired ? <ExpiredGate currentPlan={currentPlan} /> : locked ? <LockedFeature /> : children}
       </main>
     </div>
   );

@@ -1,8 +1,8 @@
 import { createServiceClient } from "@/lib/supabase/service";
-import { setTenantActive, setPlan, deleteTenant, enterStore } from "./actions";
+import { setTenantActive, setPlan, deleteTenant, enterStore, resolveSubscriptionRequest } from "./actions";
 import { CreateSuperAdminForm } from "./CreateSuperAdminForm";
-import { PLAN_PRICES } from "@/lib/plans";
-import { Store, ExternalLink, LogIn, Rocket, Trash2 } from "lucide-react";
+import { PLAN_PRICES, PLAN_LABELS, type Plan } from "@/lib/plans";
+import { Store, ExternalLink, LogIn, Rocket, Trash2, MessageCircle, Check, X } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -16,12 +16,17 @@ function demoDaysLeft(expires: string | null): number | null {
 export default async function DevPage() {
   const supabase = createServiceClient();
 
-  const [{ data: tenants }, { data: members }] = await Promise.all([
+  const [{ data: tenants }, { data: members }, { data: requests }] = await Promise.all([
     supabase
       .from("tenants")
       .select("id, slug, name, active, owner_id, is_demo, demo_expires_at, plan, plan_expires_at")
       .order("id", { ascending: true }),
     supabase.from("admins").select("email, role, tenant_id"),
+    supabase
+      .from("subscription_requests")
+      .select("id, tenant_id, plan, months, amount, currency, email, store_name, status, created_at")
+      .eq("status", "pending")
+      .order("created_at", { ascending: false }),
   ]);
 
   const ownerByTenant = new Map<number, string>();
@@ -169,6 +174,59 @@ export default async function DevPage() {
           );
         })}
       </div>
+
+      {(requests?.length ?? 0) > 0 && (
+        <section className="space-y-3">
+          <h2 className="font-display text-2xl flex items-center gap-2">
+            <MessageCircle className="h-5 w-5 text-mint" />
+            Solicitudes por transferencia
+            <span className="text-sm font-normal text-cream/50">({requests!.length} pendientes)</span>
+          </h2>
+          {requests!.map((r) => (
+            <div
+              key={r.id}
+              className="flex flex-wrap items-center gap-4 rounded-2xl bg-cream/5 border border-cream/10 px-5 py-4"
+            >
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="font-semibold truncate">{r.store_name}</p>
+                  <span className="text-[10px] font-bold uppercase tracking-widest rounded-full px-2 py-0.5 bg-lavender/30 text-lavender">
+                    {PLAN_LABELS[r.plan as Plan] ?? r.plan} · {r.months}m
+                  </span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest rounded-full px-2 py-0.5 bg-mint/20 text-mint">
+                    ${Number(r.amount).toFixed(2)} {r.currency}
+                  </span>
+                </div>
+                <p className="text-sm text-cream/60 truncate">
+                  {r.email} ·{" "}
+                  {r.tenant_id ? `tenant #${r.tenant_id}` : "nuevo (sin cuenta)"} ·{" "}
+                  {new Date(r.created_at as string).toLocaleDateString("es")}
+                </p>
+              </div>
+              <form action={resolveSubscriptionRequest}>
+                <input type="hidden" name="id" value={r.id} />
+                <input type="hidden" name="status" value="approved" />
+                <button className="inline-flex items-center gap-1.5 rounded-full bg-mint text-plum px-3 py-2 text-xs font-semibold hover:opacity-90 transition">
+                  <Check className="h-3.5 w-3.5" /> Aprobada
+                </button>
+              </form>
+              <form action={resolveSubscriptionRequest}>
+                <input type="hidden" name="id" value={r.id} />
+                <input type="hidden" name="status" value="rejected" />
+                <button
+                  aria-label="Rechazar solicitud"
+                  className="grid h-9 w-9 place-items-center rounded-full text-cream/50 hover:bg-pink/20 hover:text-pink transition"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </form>
+            </div>
+          ))}
+          <p className="text-xs text-cream/50">
+            Aprobar solo marca la solicitud. Activá la tienda con el botón Activar/Renovar de arriba.
+          </p>
+        </section>
+      )}
 
       <section className="rounded-2xl bg-cream/5 border border-cream/10 p-6">
         <h2 className="font-display text-2xl mb-1">Nueva tienda</h2>
