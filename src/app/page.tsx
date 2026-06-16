@@ -1,9 +1,7 @@
-import {
-  Store, Sparkles, ShoppingBag, MessageCircle, Palette, Zap,
-  ArrowRight, Check,
-} from "lucide-react";
+import { ShoppingBag, MessageCircle, Palette, Zap, ArrowRight, Check } from "lucide-react";
 import { ProPromoForm } from "./ProPromoForm";
 import { DemoPortalButton } from "./DemoPortalButton";
+import { FloatingChips } from "./FloatingChips";
 import { PLAN_PRICES, PRO_DISCOUNT_PCT } from "@/lib/plans";
 
 export const dynamic = "force-dynamic";
@@ -77,10 +75,8 @@ export default function LandingPage() {
         <div className="absolute -top-24 -right-16 h-80 w-80 rounded-full bg-pink/20 blur-3xl" />
         <div className="absolute -bottom-24 -left-16 h-80 w-80 rounded-full bg-lavender/30 blur-3xl" />
         <div className="relative max-w-6xl mx-auto px-4 md:px-8 py-16 md:py-28 text-center">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-plum/5 px-4 py-1.5 text-xs font-bold uppercase tracking-widest">
-            <Sparkles className="h-3.5 w-3.5 text-pink" /> Tu tienda online en minutos
-          </span>
-          <h1 className="font-display text-4xl md:text-6xl leading-[1.05] mt-6 max-w-3xl mx-auto">
+          <FloatingChips />
+          <h1 className="font-display text-4xl md:text-6xl leading-[1.05] mt-6 max-w-3xl mx-auto relative">
             Lanzá tu tienda de belleza <span className="italic text-pink">sin código</span> y empezá a vender hoy
           </h1>
           <p className="text-plum-soft text-lg mt-5 max-w-xl mx-auto">
