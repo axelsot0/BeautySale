@@ -8,8 +8,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { getAdminUser } from "@/lib/auth";
 import { ADMIN_TENANT_COOKIE } from "@/lib/tenant-context";
 import { provisionStore, deleteTenantCascade } from "@/lib/provision";
-import { sendSubscriptionStatusEmail } from "@/lib/email";
-import { PLAN_LABELS, type Plan } from "@/lib/plans";
+import { type Plan } from "@/lib/plans";
 
 // Only the platform owner (role=developer) may provision stores.
 async function ensureDeveloper() {
@@ -123,10 +122,11 @@ export async function setPlan(formData: FormData) {
 
 const MONTH_MS = 30 * 24 * 60 * 60 * 1000;
 
-// Marca una solicitud de suscripción (transferencia) como aprobada o rechazada
-// y notifica al solicitante por email. Si está aprobada y tiene tienda asociada,
-// activa el plan automáticamente (extiende desde el vencimiento vigente).
-// Solicitudes sin cuenta (tenant_id null) solo se marcan: creá la tienda a mano.
+// Marca una solicitud de suscripción (transferencia) como aprobada o rechazada.
+// Si está aprobada y tiene tienda asociada, activa el plan automáticamente
+// (extiende desde el vencimiento vigente). El admin ve el resultado en su panel
+// y lo coordinás por el mismo chat de WhatsApp. Solicitudes sin cuenta
+// (tenant_id null) solo se marcan: creá la tienda a mano.
 export async function resolveSubscriptionRequest(formData: FormData) {
   await ensureDeveloper();
   const id = String(formData.get("id") ?? "");
@@ -138,7 +138,7 @@ export async function resolveSubscriptionRequest(formData: FormData) {
     .from("subscription_requests")
     .update({ status })
     .eq("id", id)
-    .select("tenant_id, email, store_name, plan, months, amount, currency")
+    .select("tenant_id, plan, months, amount, currency")
     .maybeSingle();
   if (!reqRow) return;
 
@@ -181,14 +181,6 @@ export async function resolveSubscriptionRequest(formData: FormData) {
     });
   }
 
-  if (reqRow.email) {
-    await sendSubscriptionStatusEmail(reqRow.email, {
-      storeName: reqRow.store_name,
-      plan: PLAN_LABELS[plan] ?? reqRow.plan,
-      approved: status === "approved",
-      activated,
-    });
-  }
   revalidatePath("/dev");
 }
 

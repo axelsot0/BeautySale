@@ -23,12 +23,22 @@ export default async function SubscriptionPage({
   const status = await getTenantStatus(tenantId);
 
   const supabase = createServiceClient();
-  const { data: payments } = await supabase
-    .from("subscription_payments")
-    .select("id, plan, months, amount, currency, method, paid_at")
-    .eq("tenant_id", tenantId)
-    .order("paid_at", { ascending: false })
-    .limit(24);
+  const [{ data: payments }, { data: pendingReq }] = await Promise.all([
+    supabase
+      .from("subscription_payments")
+      .select("id, plan, months, amount, currency, method, paid_at")
+      .eq("tenant_id", tenantId)
+      .order("paid_at", { ascending: false })
+      .limit(24),
+    supabase
+      .from("subscription_requests")
+      .select("plan, months, created_at")
+      .eq("tenant_id", tenantId)
+      .eq("status", "pending")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
   const plan = status.plan;
   const expiresAt = status.isDemo ? status.demoExpiresAt : status.planExpiresAt;
@@ -53,6 +63,14 @@ export default async function SubscriptionPage({
         <div className="flex items-center gap-2 rounded-2xl bg-pink/10 border border-pink/20 px-5 py-4 text-sm font-medium text-pink">
           <XCircle className="h-5 w-5 shrink-0" />
           {cancelled ? "Pago cancelado." : "No pudimos procesar el pago. Intentá de nuevo."}
+        </div>
+      )}
+
+      {pendingReq && (
+        <div className="flex items-center gap-2 rounded-2xl bg-butter/20 border border-butter/40 px-5 py-4 text-sm font-medium">
+          <CalendarClock className="h-5 w-5 shrink-0 text-plum" />
+          Tenés una solicitud de {PLAN_LABELS[pendingReq.plan as Plan] ?? pendingReq.plan} por
+          transferencia en proceso. Te activamos apenas confirmemos el pago por WhatsApp.
         </div>
       )}
 
