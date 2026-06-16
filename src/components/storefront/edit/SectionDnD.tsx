@@ -50,8 +50,17 @@ export function SectionDnD({ sections, children }: { sections: SectionMeta[]; ch
 
   function startDrag(e: React.DragEvent, id: string) {
     dragId.current = id;
-    setDragging(id);
     e.dataTransfer.effectAllowed = "move";
+    // Algunos navegadores no inician el drag si no se setea data.
+    try {
+      e.dataTransfer.setData("text/plain", id);
+    } catch {}
+    // Mostrar el minimapa DESPUÉS de que el drag nativo quede establecido:
+    // si mutamos el DOM (montar overlay) dentro de dragstart, el navegador
+    // cancela el drag y dispara dragend al instante.
+    requestAnimationFrame(() => {
+      if (dragId.current === id) setDragging(id);
+    });
   }
 
   function onDrop() {
@@ -71,7 +80,10 @@ export function SectionDnD({ sections, children }: { sections: SectionMeta[]; ch
 
   return (
     <>
-      {order.map((id) => (
+      {/* La página queda en el orden del server durante el drag (no se reordena
+          en vivo: mover el elemento agarrado cancelaría el drag). El minimapa
+          de abajo es la superficie de reordenamiento. */}
+      {ids.map((id) => (
         <div
           key={id}
           draggable
