@@ -50,6 +50,9 @@ const SECTION_LABELS: Record<string, string> = {
   product_carousel: "Carrusel",
   mosaic: "Mosaico",
   newsletter: "Newsletter",
+  flash_sale: "Flash Sale",
+  brand_strip: "Marcas",
+  custom: "Personalizada",
 };
 
 async function RenderSection({ section, tenantId }: { section: Section; tenantId: number }) {
@@ -245,5 +248,9 @@ export async function SectionStack({
   if (!editable) return <>{items}</>;
 
   // Drag & drop para reubicar secciones (topbar y footer quedan fijos)
-  return <SectionDnD ids={sections.map((s) => s.id)}>{items}</SectionDnD>;
+  const meta = sections.map((s, i) => ({
+    id: s.id,
+    label: SECTION_LABELS[s.type] ?? `Sección ${i + 1}`,
+  }));
+  return <SectionDnD sections={meta}>{items}</SectionDnD>;
 }
