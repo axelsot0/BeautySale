@@ -1,6 +1,5 @@
-import { ShoppingBag, MessageCircle, Palette, Zap, ArrowRight, Check } from "lucide-react";
+import { Store, ShoppingBag, MessageCircle, Palette, Zap, ArrowRight, Check } from "lucide-react";
 import { ProPromoForm } from "./ProPromoForm";
-import { DemoPortalButton } from "./DemoPortalButton";
 import { FloatingChips } from "./FloatingChips";
 import { PLAN_PRICES, PRO_DISCOUNT_PCT } from "@/lib/plans";
 
@@ -86,7 +85,13 @@ export default function LandingPage() {
             <a href="/signup" className="inline-flex items-center justify-center gap-2 rounded-full bg-pink px-7 py-3.5 font-bold text-cream hover:shadow-[0_0_24px_rgba(255,77,139,0.4)] transition">
               Crear mi tienda gratis <ArrowRight className="h-4 w-4" />
             </a>
-            <DemoPortalButton />
+            <a
+              href="/t/beautysale"
+              className="inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 font-semibold transition-transform hover:scale-[1.03] active:scale-[0.98]"
+              style={{ backgroundColor: "#4A2511", color: "#ffe4cc", border: "2.5px solid #ffe4cc" }}
+            >
+              <Store className="h-4 w-4" /> Ver demo en vivo
+            </a>
           </div>
           <p className="text-xs text-plum-soft mt-4">Sin tarjeta de crédito · Modo demo por 15 días</p>
         </div>
