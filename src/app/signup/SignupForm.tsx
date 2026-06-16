@@ -8,7 +8,15 @@ const INIT: SignupState = {};
 const field = "w-full rounded-xl border border-plum/15 px-3.5 py-2.5 text-sm outline-none focus:border-pink transition";
 const label = "block text-xs font-semibold text-plum-soft uppercase tracking-wider mb-1";
 
-export function SignupForm({ next }: { next?: string }) {
+export function SignupForm({
+  next,
+  defaultEmail,
+  defaultStore,
+}: {
+  next?: string;
+  defaultEmail?: string;
+  defaultStore?: string;
+}) {
   const [state, action, pending] = useActionState(signupStore, INIT);
 
   return (
@@ -19,7 +27,7 @@ export function SignupForm({ next }: { next?: string }) {
 
       <div>
         <label className={label}>Nombre de tu tienda</label>
-        <input name="store_name" required maxLength={60} placeholder="Glow Beauty" className={field} />
+        <input name="store_name" required maxLength={60} defaultValue={defaultStore} placeholder="Glow Beauty" className={field} />
       </div>
 
       <div>
@@ -29,7 +37,7 @@ export function SignupForm({ next }: { next?: string }) {
 
       <div>
         <label className={label}>Email</label>
-        <input name="email" type="email" required placeholder="maria@ejemplo.com" className={field} />
+        <input name="email" type="email" required defaultValue={defaultEmail} placeholder="maria@ejemplo.com" className={field} />
       </div>
 
       <div>

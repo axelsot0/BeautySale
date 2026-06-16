@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Loader2, CreditCard, MessageCircle, Lock } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Loader2, CreditCard, MessageCircle, Lock, CheckCircle2 } from "lucide-react";
 import { PLAN_PRICES, PLAN_LABELS, PRO_DISCOUNT_PCT, type Plan } from "@/lib/plans";
 
 const field =
@@ -46,6 +46,25 @@ export function SubscribeCheckout({
   const [storeName, setStoreName] = useState(initialStore);
   const [loading, setLoading] = useState<null | "paypal" | "whatsapp">(null);
   const [error, setError] = useState<string | null>(null);
+  const [waUrl, setWaUrl] = useState<string | null>(null);
+
+  // Preserva email + nombre de tienda cuando el visitante (sin sesión) cambia de
+  // plan, ya que el toggle recarga la página. Para logueados no aplica (prellenado).
+  useEffect(() => {
+    if (loggedIn) return;
+    try {
+      const saved = JSON.parse(sessionStorage.getItem("bs_sub_form") ?? "{}");
+      if (!initialEmail && typeof saved.email === "string") setEmail(saved.email);
+      if (!initialStore && typeof saved.storeName === "string") setStoreName(saved.storeName);
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    if (loggedIn) return;
+    try {
+      sessionStorage.setItem("bs_sub_form", JSON.stringify({ email, storeName }));
+    } catch {}
+  }, [loggedIn, email, storeName]);
 
   const price = PLAN_PRICES[initialPlan];
   // El descuento solo cuenta cuando el código fue validado contra la DB.
@@ -80,9 +99,13 @@ export function SubscribeCheckout({
     setError(null);
     if (alreadyHasPlan) return;
     // Sin sesión: hay que crear cuenta primero (PayPal activa una tienda concreta).
+    // Llevamos email + nombre de tienda para prellenar el signup.
     if (!loggedIn) {
       const next = `/suscribir?plan=${initialPlan}&months=${months}`;
-      window.location.href = `/signup?next=${encodeURIComponent(next)}`;
+      const params = new URLSearchParams({ next });
+      if (email.trim()) params.set("email", email.trim());
+      if (storeName.trim()) params.set("store", storeName.trim());
+      window.location.href = `/signup?${params.toString()}`;
       return;
     }
     setLoading("paypal");
@@ -131,11 +154,42 @@ export function SubscribeCheckout({
         setLoading(null);
         return;
       }
-      window.location.href = data.waUrl;
+      // Abrimos WhatsApp en pestaña nueva y dejamos confirmación en el sitio.
+      setWaUrl(data.waUrl);
+      window.open(data.waUrl, "_blank", "noopener");
+      setLoading(null);
     } catch {
       setError(ERRORS.db_error);
       setLoading(null);
     }
+  }
+
+  if (waUrl) {
+    return (
+      <section className="rounded-[28px] bg-white border border-plum/10 p-6 md:p-8 space-y-5 h-fit text-center">
+        <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-mint/15">
+          <CheckCircle2 className="h-8 w-8 text-mint" />
+        </div>
+        <div className="space-y-1.5">
+          <h2 className="font-display text-2xl">Solicitud registrada</h2>
+          <p className="text-plum-soft text-sm">
+            Te abrimos WhatsApp para coordinar la transferencia. Si no se abrió, tocá el botón.
+            Activamos tu tienda apenas confirmemos el pago.
+          </p>
+        </div>
+        <a
+          href={waUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-[#25D366] py-3.5 font-bold text-white hover:opacity-90 transition"
+        >
+          <MessageCircle className="h-4 w-4" /> Abrir WhatsApp
+        </a>
+        <a href="/" className="block text-sm text-plum-soft hover:text-pink transition">
+          Volver al inicio
+        </a>
+      </section>
+    );
   }
 
   return (

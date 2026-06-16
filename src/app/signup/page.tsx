@@ -15,9 +15,9 @@ const PERKS = [
 export default async function SignupPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{ next?: string; email?: string; store?: string }>;
 }) {
-  const { next } = await searchParams;
+  const { next, email, store } = await searchParams;
   return (
     <div className="min-h-screen bg-cream text-plum grid lg:grid-cols-2">
       {/* Left: pitch */}
@@ -58,7 +58,7 @@ export default async function SignupPage({
             Empezá en modo demo. Sin tarjeta de crédito.
           </p>
 
-          <SignupForm next={next} />
+          <SignupForm next={next} defaultEmail={email} defaultStore={store} />
 
           <p className="text-sm text-center text-plum-soft mt-6">
             ¿Ya tenés tienda?{" "}

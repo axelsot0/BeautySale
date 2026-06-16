@@ -14,6 +14,12 @@ export default function StoreUnavailable() {
         >
           Ir al inicio
         </a>
+        <p className="text-sm text-plum-soft pt-2">
+          ¿Sos el dueño?{" "}
+          <a href="/admin/subscription" className="font-semibold text-pink hover:underline">
+            Reactivá tu tienda
+          </a>
+        </p>
       </div>
     </main>
   );

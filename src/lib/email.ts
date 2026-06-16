@@ -337,13 +337,16 @@ function buildSubscriptionStatusEmail(d: {
   storeName: string;
   plan: string;
   approved: boolean;
+  activated: boolean;
 }): string {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const title = d.approved ? "Tu suscripción fue aprobada" : "Tu solicitud no fue aprobada";
   const emoji = d.approved ? "✅" : "⚠️";
-  const body = d.approved
-    ? `Confirmamos el pago de tu plan <strong>${d.plan}</strong> para <strong>${d.storeName}</strong>. Tu tienda ya está activa.`
-    : `No pudimos aprobar tu solicitud de suscripción para <strong>${d.storeName}</strong>. Si creés que es un error o querés intentar de nuevo, escribinos.`;
+  const body = !d.approved
+    ? `No pudimos aprobar tu solicitud de suscripción para <strong>${d.storeName}</strong>. Si creés que es un error o querés intentar de nuevo, escribinos.`
+    : d.activated
+      ? `Confirmamos el pago de tu plan <strong>${d.plan}</strong> para <strong>${d.storeName}</strong>. Tu tienda ya está activa.`
+      : `Aprobamos tu solicitud del plan <strong>${d.plan}</strong> para <strong>${d.storeName}</strong>. Te contactamos por WhatsApp para terminar de crear y activar tu tienda.`;
   return `<!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
 <body style="margin:0;padding:0;background:#FFF8F0;font-family:'Helvetica Neue',Arial,sans-serif;color:#2D1B4E;">
@@ -382,7 +385,7 @@ function buildSubscriptionStatusEmail(d: {
 
 export async function sendSubscriptionStatusEmail(
   email: string,
-  data: { storeName: string; plan: string; approved: boolean },
+  data: { storeName: string; plan: string; approved: boolean; activated: boolean },
 ): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {

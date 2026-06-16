@@ -121,9 +121,12 @@ export async function setPlan(formData: FormData) {
   revalidatePath("/dev");
 }
 
+const MONTH_MS = 30 * 24 * 60 * 60 * 1000;
+
 // Marca una solicitud de suscripción (transferencia) como aprobada o rechazada
-// y notifica al solicitante por email. No activa la tienda por sí sola: usá el
-// botón Activar/Renovar del tenant.
+// y notifica al solicitante por email. Si está aprobada y tiene tienda asociada,
+// activa el plan automáticamente (extiende desde el vencimiento vigente).
+// Solicitudes sin cuenta (tenant_id null) solo se marcan: creá la tienda a mano.
 export async function resolveSubscriptionRequest(formData: FormData) {
   await ensureDeveloper();
   const id = String(formData.get("id") ?? "");
@@ -135,14 +138,55 @@ export async function resolveSubscriptionRequest(formData: FormData) {
     .from("subscription_requests")
     .update({ status })
     .eq("id", id)
-    .select("email, store_name, plan")
+    .select("tenant_id, email, store_name, plan, months, amount, currency")
     .maybeSingle();
+  if (!reqRow) return;
 
-  if (reqRow?.email) {
+  const plan = reqRow.plan as Plan;
+  const activated = status === "approved" && !!reqRow.tenant_id && (plan === "basic" || plan === "pro");
+  if (activated) {
+    const months = Math.max(1, Math.min(24, Number(reqRow.months) || 1));
+    const { data: tenant } = await supabase
+      .from("tenants")
+      .select("plan_expires_at")
+      .eq("id", reqRow.tenant_id)
+      .maybeSingle();
+    const currentExpiry = tenant?.plan_expires_at ? new Date(tenant.plan_expires_at).getTime() : 0;
+    const base = Math.max(Date.now(), currentExpiry);
+    const newExpiry = new Date(base + months * MONTH_MS).toISOString();
+
+    await supabase
+      .from("tenants")
+      .update({
+        plan,
+        plan_expires_at: newExpiry,
+        is_demo: false,
+        demo_expires_at: null,
+        active: true,
+      })
+      .eq("id", reqRow.tenant_id);
+    await supabase
+      .from("admins")
+      .update({ active: true })
+      .eq("tenant_id", reqRow.tenant_id)
+      .neq("role", "developer");
+    await supabase.from("subscription_payments").insert({
+      tenant_id: reqRow.tenant_id,
+      plan,
+      months,
+      amount: reqRow.amount,
+      currency: reqRow.currency ?? "USD",
+      method: "transfer",
+      note: "transferencia WhatsApp aprobada",
+    });
+  }
+
+  if (reqRow.email) {
     await sendSubscriptionStatusEmail(reqRow.email, {
       storeName: reqRow.store_name,
-      plan: PLAN_LABELS[reqRow.plan as Plan] ?? reqRow.plan,
+      plan: PLAN_LABELS[plan] ?? reqRow.plan,
       approved: status === "approved",
+      activated,
     });
   }
   revalidatePath("/dev");
